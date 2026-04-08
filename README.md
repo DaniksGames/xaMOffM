@@ -2,7 +2,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>VideoChat | Звонки + Кружки + Админ</title>
+    <title>VideoChat | Звонки + Кружки</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fingerprintjs2/2.1.0/fingerprint2.min.js"></script>
@@ -25,7 +25,7 @@
             --input-bg: #ffffff;
             --input-border: #e2e8f0;
             --icon-color: #4a6cf7;
-            --call-overlay-bg: rgba(0,0,0,0.9);
+            --call-overlay-bg: rgba(0,0,0,0.95);
         }
         
         body.dark {
@@ -44,7 +44,7 @@
         }
         
         body { background: var(--bg-body); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 16px; }
-        .chat-container { width: 100%; max-width: 900px; height: 92vh; background: var(--chat-bg); border-radius: 28px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); position: relative; }
+        .chat-container { width: 100%; max-width: 900px; height: 92vh; background: var(--chat-bg); border-radius: 28px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
         
         .chat-header { background: var(--header-bg); color: var(--header-text); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
         .header-left { display: flex; align-items: center; gap: 12px; }
@@ -72,7 +72,6 @@
         
         .delete-btn { position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; border: none; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; font-size: 10px; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; justify-content: center; z-index: 10; }
         .message:hover .delete-btn { opacity: 1; }
-        .my-message .delete-btn { right: -8px; }
         
         .circle-video { width: 180px; height: 180px; border-radius: 50%; object-fit: cover; margin-top: 6px; cursor: pointer; background: #000; }
         .circle-video video { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
@@ -96,12 +95,13 @@
         .perm-btn.mic { background: #f59e0b; }
         .perm-btn.both { background: #8b5cf6; }
         
-        .call-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; display: none; flex-direction: column; justify-content: center; align-items: center; }
+        .call-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--call-overlay-bg); z-index: 2000; display: none; flex-direction: column; justify-content: center; align-items: center; }
         .call-video-container { width: 100%; height: 80%; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 20px; padding: 20px; }
         .local-video, .remote-video { width: 45%; height: 45%; background: #000; border-radius: 16px; object-fit: cover; }
         .call-controls { position: absolute; bottom: 30px; display: flex; justify-content: center; gap: 20px; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 60px; }
         .call-control-btn { background: #334155; border: none; width: 55px; height: 55px; border-radius: 50%; cursor: pointer; color: white; font-size: 1.5rem; }
         .call-control-btn.end-call { background: #ef4444; }
+        .call-control-btn.active { background: #ef4444; }
         .incoming-call-modal { position: fixed; bottom: 100px; left: 20px; right: 20px; max-width: 350px; background: var(--chat-bg); border-radius: 20px; padding: 20px; z-index: 2100; box-shadow: 0 10px 40px rgba(0,0,0,0.3); display: none; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background: var(--chat-bg); border-radius: 24px; padding: 24px; width: 90%; max-width: 500px; }
@@ -171,23 +171,7 @@
 <div id="profileModal" class="modal"><div class="modal-content"><h3>Настройки</h3><input type="text" id="modalName" placeholder="Имя"><input type="file" id="modalAvatar" accept="image/*"><button id="saveProfileBtn">Сохранить</button><button id="closeModalBtn">Отмена</button></div></div>
 
 <script>
-    // ========== ПРОВЕРКА БЕЗОПАСНОГО КОНТЕКСТА ==========
-    const isSecureContext = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-    const messagesArea = document.getElementById('messagesArea');
-    
-    function addSystemMessage(text, type = '') {
-        const div = document.createElement('div');
-        div.className = `system-message ${type}`;
-        div.innerHTML = text;
-        messagesArea.appendChild(div);
-        messagesArea.scrollTop = messagesArea.scrollHeight;
-    }
-    
-    if (!isSecureContext) {
-        addSystemMessage('⚠️ <strong>ВНИМАНИЕ!</strong> Для работы камеры и микрофона страница должна открываться по <strong>HTTPS</strong> или <strong>localhost</strong>.', 'error-message');
-    }
-    
-    // ========== FIREBASE С ОЧИСТКОЙ СТАРЫХ ДАННЫХ ==========
+    // ========== FIREBASE ==========
     const firebaseConfig = {
         apiKey: "AIzaSyD4a16-r1nwCVDAu5_DBnirq0e8Lu9pBZw",
         authDomain: "daniksgames-d46b2.firebaseapp.com",
@@ -209,8 +193,20 @@
     let isVideoOff = false;
     let hasCamera = false;
     let hasMic = false;
+    let callListeners = {};
     
-    // ========== ЗАПРОС РАЗРЕШЕНИЙ ОТДЕЛЬНО ==========
+    const messagesArea = document.getElementById('messagesArea');
+    
+    function addSystemMessage(text, type = '') {
+        const div = document.createElement('div');
+        div.className = `system-message ${type}`;
+        div.innerHTML = text;
+        messagesArea.appendChild(div);
+        messagesArea.scrollTop = messagesArea.scrollHeight;
+        console.log('[System]', text);
+    }
+    
+    // ========== ЗАПРОС РАЗРЕШЕНИЙ ==========
     async function requestCamera() {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -249,7 +245,7 @@
         const container = document.getElementById('permissionContainer');
         if (container) {
             if (hasCamera && hasMic) {
-                container.innerHTML = '<div class="system-message success-message">✅ Все разрешения получены! Можно звонить и записывать кружки.</div>';
+                container.innerHTML = '<div class="system-message success-message">✅ Все разрешения получены! Можно звонить.</div>';
             } else {
                 container.innerHTML = `
                     <div class="permission-buttons">
@@ -265,17 +261,16 @@
         }
     }
     
-    // ========== ОЧИСТКА СТАРЫХ ДАННЫХ И НАЗНАЧЕНИЕ АДМИНА ==========
+    // ========== ОЧИСТКА СТАРЫХ ДАННЫХ ==========
     async function cleanOldDataAndInit() {
-        const cleanFlag = localStorage.getItem('chat_cleaned_v3');
-        
+        const cleanFlag = localStorage.getItem('chat_cleaned_v4');
         if (!cleanFlag) {
-            addSystemMessage('🧹 Первый запуск новой версии. Очищаем старые данные...', 'system-message');
+            addSystemMessage('🧹 Первый запуск. Очищаем старые данные...', 'system-message');
             await db.ref('users').remove();
             await db.ref('messages').remove();
             await db.ref('calls').remove();
             await db.ref('admin').remove();
-            localStorage.setItem('chat_cleaned_v3', 'true');
+            localStorage.setItem('chat_cleaned_v4', 'true');
             addSystemMessage('✅ Старые данные удалены. Первый зашедший станет администратором.', 'success-message');
         }
     }
@@ -294,7 +289,6 @@
         const fp = await getFingerprint();
         currentFingerprint = fp;
         
-        // Восстанавливаем сохранённые разрешения
         hasCamera = localStorage.getItem('camera_granted_' + fp) === 'true';
         hasMic = localStorage.getItem('mic_granted_' + fp) === 'true';
         
@@ -308,19 +302,15 @@
                 currentUserName = c.val().name; 
                 currentUserAvatar = c.val().avatar || ''; 
             });
-            // Проверяем, является ли пользователь админом
             const adminData = await db.ref('admin').once('value');
             if (adminData.exists() && adminData.val().adminFingerprint === fp) isAdmin = true;
         } else {
-            // Новый пользователь
             const adminExists = adminSnap.exists();
             if (!adminExists) isAdmin = true;
-            
             currentUserName = 'User_' + Math.floor(Math.random() * 10000);
             const newUser = usersRef.push();
             currentUserId = newUser.key;
             await newUser.set({ fingerprint: fp, name: currentUserName, avatar: '', createdAt: Date.now() });
-            
             if (isAdmin) {
                 await db.ref('admin').set({ adminFingerprint: fp, adminId: currentUserId });
                 addSystemMessage('👑 Вы стали администратором чата!', 'success-message');
@@ -332,14 +322,13 @@
         document.getElementById('headerAvatar').src = currentUserAvatar || `https://ui-avatars.com/api/?background=4a6cf7&color=fff&name=${encodeURIComponent(currentUserName)}`;
         document.getElementById('modalName').value = currentUserName;
         
-        // Показываем кнопки запроса разрешений если нужно
         if (!hasCamera || !hasMic) {
             const permDiv = document.createElement('div');
             permDiv.id = 'permissionContainer';
             messagesArea.appendChild(permDiv);
             updatePermissionButtons();
         } else {
-            addSystemMessage('✅ Разрешения на камеру и микрофон уже были выданы ранее.', 'success-message');
+            addSystemMessage('✅ Разрешения на камеру и микрофон уже выданы.', 'success-message');
         }
     }
     
@@ -399,7 +388,7 @@
         
         // Голосовые
         document.getElementById('voiceBtn').onclick = async () => {
-            if (!hasMic) { alert('Сначала разрешите доступ к микрофону через кнопку выше!'); return; }
+            if (!hasMic) { alert('Сначала разрешите доступ к микрофону!'); return; }
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 const mediaRecorder = new MediaRecorder(stream);
@@ -420,13 +409,13 @@
             } catch(e) { alert('Нет доступа к микрофону'); }
         };
         
-        // КРУЖКИ (видео-сообщения до 30 секунд)
+        // КРУЖКИ
         let circleRecorder = null, circleChunks = [], isCircleRecording = false, circleStream = null;
         const circleBtn = document.getElementById('circleVideoBtn');
         
         circleBtn.onclick = async () => {
-            if (!hasCamera) { alert('Сначала разрешите доступ к камере через кнопку выше!'); return; }
-            if (!hasMic) { alert('Для кружка нужен и микрофон. Разрешите доступ к микрофону!'); return; }
+            if (!hasCamera) { alert('Сначала разрешите доступ к камере!'); return; }
+            if (!hasMic) { alert('Для кружка нужен микрофон!'); return; }
             
             if (isCircleRecording) {
                 if (circleRecorder && circleRecorder.state === 'recording') circleRecorder.stop();
@@ -461,11 +450,10 @@
                             circleBtn.innerHTML = '<i class="fas fa-circle"></i>';
                         }
                     }, 30000);
-                } catch(e) { alert('Нет доступа к камере или микрофону для кружка'); }
+                } catch(e) { alert('Ошибка доступа к камере/микрофону'); }
             }
         };
         
-        // Получение сообщений с кнопкой удаления
         messagesRef.orderByChild('time').limitToLast(200).on('child_added', (snap) => {
             const msg = snap.val();
             if (!msg) return;
@@ -528,102 +516,218 @@
         document.getElementById('themeToggle').onclick = () => { document.body.classList.toggle('dark'); localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light'); };
     }
     
-    // ========== ЗВОНКИ ==========
+    // ========== ЗВОНКИ (ПЕРЕПИСАНА ЛОГИКА) ==========
     const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
     const callsRef = db.ref('calls');
-    let callListener = null;
     
-    async function startCall(isVideoCall = true) {
+    async function startCall() {
         if (isCallActive) { alert('Уже в звонке'); return; }
-        if (!hasCamera || !hasMic) { alert('Сначала разрешите доступ к камере и микрофону через кнопки выше!'); return; }
+        if (!hasCamera || !hasMic) { alert('Сначала разрешите доступ к камере и микрофону!'); return; }
+        
+        addSystemMessage('📞 Начинаем звонок...', 'system-message');
         
         try {
-            localStream = await navigator.mediaDevices.getUserMedia({ video: isVideoCall, audio: true });
+            // Получаем локальный поток
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             document.getElementById('localVideo').srcObject = localStream;
+            
+            // Создаём PeerConnection
             peerConnection = new RTCPeerConnection(configuration);
-            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-            peerConnection.ontrack = (event) => { document.getElementById('remoteVideo').srcObject = event.streams[0]; };
-            peerConnection.onicecandidate = (event) => {
-                if (event.candidate) db.ref('calls/' + currentCallId + '/candidate').push({ candidate: event.candidate, from: currentUserId });
+            
+            // Добавляем треки
+            localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localStream);
+            });
+            
+            // Получаем удалённый поток
+            peerConnection.ontrack = (event) => {
+                document.getElementById('remoteVideo').srcObject = event.streams[0];
+                addSystemMessage('📹 Удалённое видео подключено', 'success-message');
             };
+            
+            // Обработка ICE кандидатов
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate && currentCallId) {
+                    db.ref('calls/' + currentCallId + '/candidates').push({
+                        candidate: event.candidate,
+                        from: currentUserId,
+                        time: Date.now()
+                    });
+                }
+            };
+            
+            // Обработка состояния подключения
+            peerConnection.onconnectionstatechange = () => {
+                addSystemMessage(`🔌 Состояние соединения: ${peerConnection.connectionState}`, 'system-message');
+                if (peerConnection.connectionState === 'connected') {
+                    addSystemMessage('✅ Звонок установлен!', 'success-message');
+                } else if (peerConnection.connectionState === 'failed') {
+                    addSystemMessage('❌ Соединение разорвано', 'error-message');
+                    endCall();
+                }
+            };
+            
+            // Создаём offer
             const offer = await peerConnection.createOffer();
             await peerConnection.setLocalDescription(offer);
-            currentCallId = 'call_' + Date.now();
-            await callsRef.child(currentCallId).set({ type: 'offer', offer: { sdp: offer.sdp, type: offer.type }, from: currentUserId, fromName: currentUserName, timestamp: Date.now(), active: true });
+            
+            // Создаём запись о звонке
+            currentCallId = 'call_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+            await callsRef.child(currentCallId).set({
+                type: 'offer',
+                offer: { sdp: offer.sdp, type: offer.type },
+                from: currentUserId,
+                fromName: currentUserName,
+                timestamp: Date.now(),
+                active: true
+            });
+            
             isCallActive = true;
             document.getElementById('callOverlay').style.display = 'flex';
-            listenForCallResponse();
-        } catch(e) { console.error(e); alert('Ошибка доступа к камере/микрофону'); }
-    }
-    
-    function listenForCallResponse() {
-        if (callListener) callListener.off();
-        callListener = callsRef.child(currentCallId).on('value', async (snap) => {
-            const data = snap.val();
-            if (!data) return;
-            if (data.type === 'answer' && peerConnection && peerConnection.signalingState !== 'stable') {
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-            }
-            if (data.candidate && peerConnection) {
-                await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate.candidate));
-            }
-            if (data.endCall) endCall();
-        });
+            
+            // Слушаем ответ
+            const answerListener = callsRef.child(currentCallId).on('value', async (snap) => {
+                const data = snap.val();
+                if (data && data.type === 'answer' && peerConnection && peerConnection.signalingState !== 'stable') {
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+                    addSystemMessage('📞 Ответ получен, соединение устанавливается...', 'system-message');
+                }
+                if (data && data.candidates) {
+                    // Обработка кандидатов
+                    const candidatesSnap = await callsRef.child(currentCallId + '/candidates').once('value');
+                    if (candidatesSnap.exists()) {
+                        candidatesSnap.forEach(async (candSnap) => {
+                            const cand = candSnap.val();
+                            if (cand.from !== currentUserId && peerConnection) {
+                                try {
+                                    await peerConnection.addIceCandidate(new RTCIceCandidate(cand.candidate));
+                                } catch(e) {}
+                            }
+                        });
+                    }
+                }
+                if (data && data.endCall) {
+                    endCall();
+                }
+            });
+            
+            callListeners[currentCallId] = answerListener;
+            
+        } catch(e) {
+            console.error('Start call error:', e);
+            addSystemMessage('❌ Ошибка при начале звонка: ' + e.message, 'error-message');
+        }
     }
     
     function listenForIncomingCalls() {
-        db.ref('calls').orderByChild('timestamp').startAt(Date.now() - 60000).on('child_added', (snap) => {
+        callsRef.on('child_added', (snap) => {
             const call = snap.val();
-            if (call.from !== currentUserId && call.active && !isCallActive && !call.rejected) {
+            if (!call || call.from === currentUserId) return;
+            if (call.active && !isCallActive && !call.rejected && !call.answered) {
                 currentCallId = snap.key;
                 document.getElementById('callerName').innerHTML = `📞 ${call.fromName} звонит...`;
                 document.getElementById('incomingCallModal').style.display = 'block';
+                
                 window.answerCall = async (accept) => {
                     document.getElementById('incomingCallModal').style.display = 'none';
-                    if (!accept) { await callsRef.child(currentCallId).update({ active: false, rejected: true }); return; }
-                    if (!hasCamera || !hasMic) { alert('Сначала разрешите доступ к камере и микрофону!'); return; }
+                    
+                    if (!accept) {
+                        await callsRef.child(currentCallId).update({ rejected: true, active: false });
+                        return;
+                    }
+                    
+                    if (!hasCamera || !hasMic) {
+                        alert('Сначала разрешите доступ к камере и микрофону!');
+                        return;
+                    }
+                    
+                    addSystemMessage('📞 Принимаем звонок...', 'system-message');
+                    
                     try {
                         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                         document.getElementById('localVideo').srcObject = localStream;
+                        
                         peerConnection = new RTCPeerConnection(configuration);
                         localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-                        peerConnection.ontrack = (event) => { document.getElementById('remoteVideo').srcObject = event.streams[0]; };
-                        peerConnection.onicecandidate = (event) => {
-                            if (event.candidate) db.ref('calls/' + currentCallId + '/candidate').push({ candidate: event.candidate, from: currentUserId });
+                        
+                        peerConnection.ontrack = (event) => {
+                            document.getElementById('remoteVideo').srcObject = event.streams[0];
                         };
+                        
+                        peerConnection.onicecandidate = (event) => {
+                            if (event.candidate && currentCallId) {
+                                db.ref('calls/' + currentCallId + '/candidates').push({
+                                    candidate: event.candidate,
+                                    from: currentUserId,
+                                    time: Date.now()
+                                });
+                            }
+                        };
+                        
                         await peerConnection.setRemoteDescription(new RTCSessionDescription(call.offer));
                         const answer = await peerConnection.createAnswer();
                         await peerConnection.setLocalDescription(answer);
-                        await callsRef.child(currentCallId).update({ type: 'answer', answer: { sdp: answer.sdp, type: answer.type } });
+                        await callsRef.child(currentCallId).update({
+                            type: 'answer',
+                            answer: { sdp: answer.sdp, type: answer.type },
+                            answered: true
+                        });
+                        
                         isCallActive = true;
                         document.getElementById('callOverlay').style.display = 'flex';
-                        listenForCallResponse();
-                    } catch(e) { console.error(e); alert('Ошибка ответа на звонок'); }
+                        
+                        // Слушаем завершение
+                        const endListener = callsRef.child(currentCallId).on('value', (snap) => {
+                            if (snap.val() && snap.val().endCall) endCall();
+                        });
+                        callListeners[currentCallId] = endListener;
+                        
+                    } catch(e) {
+                        console.error('Answer error:', e);
+                        addSystemMessage('❌ Ошибка ответа: ' + e.message, 'error-message');
+                    }
                 };
             }
         });
     }
     
     function endCall() {
-        if (peerConnection) peerConnection.close();
-        if (localStream) localStream.getTracks().forEach(t => t.stop());
-        if (currentCallId) db.ref('calls/' + currentCallId).update({ endCall: true, active: false });
-        peerConnection = null; localStream = null; isCallActive = false; currentCallId = null;
+        if (peerConnection) {
+            peerConnection.close();
+            peerConnection = null;
+        }
+        if (localStream) {
+            localStream.getTracks().forEach(t => t.stop());
+            localStream = null;
+        }
+        if (currentCallId) {
+            db.ref('calls/' + currentCallId).update({ endCall: true, active: false });
+            if (callListeners[currentCallId]) {
+                callsRef.child(currentCallId).off('value', callListeners[currentCallId]);
+                delete callListeners[currentCallId];
+            }
+        }
+        isCallActive = false;
+        currentCallId = null;
         document.getElementById('callOverlay').style.display = 'none';
         document.getElementById('localVideo').srcObject = null;
         document.getElementById('remoteVideo').srcObject = null;
+        addSystemMessage('📞 Звонок завершён', 'system-message');
     }
     
     function setupCallHandlers() {
-        document.getElementById('callBtn').onclick = () => startCall(true);
+        document.getElementById('callBtn').onclick = startCall;
         document.getElementById('endCallBtn').onclick = endCall;
+        
         document.getElementById('toggleMuteBtn').onclick = () => {
             if (localStream) {
                 isMuted = !isMuted;
                 localStream.getAudioTracks().forEach(t => t.enabled = !isMuted);
                 document.getElementById('toggleMuteBtn').innerHTML = isMuted ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
+                document.getElementById('toggleMuteBtn').classList.toggle('active', isMuted);
             }
         };
+        
         document.getElementById('toggleVideoBtn').onclick = () => {
             if (localStream) {
                 isVideoOff = !isVideoOff;
@@ -631,6 +735,7 @@
                 document.getElementById('toggleVideoBtn').innerHTML = isVideoOff ? '<i class="fas fa-video-slash"></i>' : '<i class="fas fa-video"></i>';
             }
         };
+        
         document.getElementById('shareScreenBtn').onclick = async () => {
             if (!peerConnection) { alert('Сначала начните звонок'); return; }
             try {
