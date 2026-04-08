@@ -1,9 +1,8 @@
-<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>VideoChat | Звонки + Кружки</title>
+    <title>VideoChat | Звонки + Кружки + Админ</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fingerprintjs2/2.1.0/fingerprint2.min.js"></script>
@@ -71,13 +70,16 @@
         .message-time { font-size: 0.55rem; opacity: 0.7; margin-top: 4px; display: block; }
         .my-message .message-time { text-align: right; }
         
+        .delete-btn { position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; border: none; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; font-size: 10px; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        .message:hover .delete-btn { opacity: 1; }
+        .my-message .delete-btn { right: -8px; }
+        
         .circle-video { width: 180px; height: 180px; border-radius: 50%; object-fit: cover; margin-top: 6px; cursor: pointer; background: #000; }
         .circle-video video { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
         
         .system-message { text-align: center; font-size: 0.7rem; background: var(--system-bg); color: var(--system-text); padding: 6px 12px; border-radius: 20px; margin: 4px auto; width: fit-content; }
         .error-message { background: #fee2e2; color: #dc2626; }
         .success-message { background: #dcfce7; color: #16a34a; }
-        .warning-message { background: #fef3c7; color: #d97706; }
         
         .input-area { background: var(--input-bg); border-top: 1px solid var(--input-border); padding: 12px 16px; }
         .input-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -87,6 +89,12 @@
         .send-btn { background: var(--icon-color); color: white; border: none; width: 46px; height: 46px; border-radius: 50%; cursor: pointer; }
         
         @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
+        
+        .permission-buttons { display: flex; gap: 10px; justify-content: center; margin: 10px 0; flex-wrap: wrap; }
+        .perm-btn { background: #4a6cf7; color: white; border: none; padding: 10px 20px; border-radius: 30px; cursor: pointer; font-size: 0.9rem; margin: 5px; }
+        .perm-btn.camera { background: #10b981; }
+        .perm-btn.mic { background: #f59e0b; }
+        .perm-btn.both { background: #8b5cf6; }
         
         .call-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; display: none; flex-direction: column; justify-content: center; align-items: center; }
         .call-video-container { width: 100%; height: 80%; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 20px; padding: 20px; }
@@ -99,10 +107,6 @@
         .modal-content { background: var(--chat-bg); border-radius: 24px; padding: 24px; width: 90%; max-width: 500px; }
         .modal-content input, .modal-content button { margin-top: 12px; width: 100%; padding: 12px; border-radius: 24px; }
         .modal-content button { background: var(--icon-color); color: white; border: none; cursor: pointer; }
-        
-        /* Кнопка запроса разрешений */
-        .permission-request-btn { background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 30px; cursor: pointer; font-size: 0.9rem; margin-top: 10px; }
-        .permission-status { display: inline-block; margin-left: 10px; font-size: 0.8rem; }
         
         @media (max-width: 600px) { .local-video, .remote-video { width: 90%; height: 35%; } .message { max-width: 90%; } .circle-video { width: 130px; height: 130px; } }
     </style>
@@ -180,13 +184,10 @@
     }
     
     if (!isSecureContext) {
-        addSystemMessage('⚠️ <strong>ВНИМАНИЕ!</strong> Для работы камеры и микрофона страница должна открываться по <strong>HTTPS</strong> или <strong>localhost</strong>.<br>Сейчас используется ' + location.protocol + '// — камера НЕ БУДЕТ работать.<br><br>🔧 Решение: загрузите этот файл на HTTPS-хостинг (GitHub Pages, Netlify, Vercel) или используйте локальный сервер.', 'error-message');
-        addSystemMessage('📌 <strong>Как временно обойти в Chrome:</strong><br>1. Откройте chrome://flags/#unsafely-treat-insecure-origin-as-secure<br>2. Включите флаг и добавьте ваш адрес в список разрешённых<br>3. Перезапустите Chrome', 'warning-message');
-    } else {
-        addSystemMessage('✅ <strong>Безопасный контекст!</strong> Камера и микрофон будут работать.', 'success-message');
+        addSystemMessage('⚠️ <strong>ВНИМАНИЕ!</strong> Для работы камеры и микрофона страница должна открываться по <strong>HTTPS</strong> или <strong>localhost</strong>.', 'error-message');
     }
     
-    // ========== FIREBASE ==========
+    // ========== FIREBASE С ОЧИСТКОЙ СТАРЫХ ДАННЫХ ==========
     const firebaseConfig = {
         apiKey: "AIzaSyD4a16-r1nwCVDAu5_DBnirq0e8Lu9pBZw",
         authDomain: "daniksgames-d46b2.firebaseapp.com",
@@ -206,76 +207,80 @@
     let isCallActive = false;
     let isMuted = false;
     let isVideoOff = false;
-    let hasPermissions = false;
+    let hasCamera = false;
+    let hasMic = false;
     
-    // ========== ЗАПРОС РАЗРЕШЕНИЙ (ОБЯЗАТЕЛЬНО ПО КЛИКУ) ==========
-    // ВАЖНО: getUserMedia() должен вызываться ТОЛЬКО по действию пользователя (клик) [citation:1][citation:5]
-    async function requestPermissions() {
-        addSystemMessage('🎥 Запрашиваем доступ к камере и микрофону...', 'system-message');
-        
+    // ========== ЗАПРОС РАЗРЕШЕНИЙ ОТДЕЛЬНО ==========
+    async function requestCamera() {
         try {
-            // Запрашиваем оба устройства одновременно [citation:1]
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: true, 
-                audio: true 
-            });
-            
-            // Если получили поток — разрешения даны
-            hasPermissions = true;
-            
-            // Сразу останавливаем треки, нам нужен был только запрос разрешений
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
             stream.getTracks().forEach(track => track.stop());
-            
-            addSystemMessage('✅ <strong>Доступ к камере и микрофону разрешён!</strong> Теперь можно звонить и записывать кружки.', 'success-message');
-            
-            // Сохраняем в localStorage что разрешения уже были
-            localStorage.setItem('permissions_granted_' + currentFingerprint, 'true');
-            
+            hasCamera = true;
+            addSystemMessage('✅ Доступ к камере разрешён!', 'success-message');
+            localStorage.setItem('camera_granted_' + currentFingerprint, 'true');
             return true;
-        } catch (err) {
-            console.error('Permission error:', err);
-            let errorMsg = '';
-            
-            // Обрабатываем разные типы ошибок [citation:1][citation:5]
-            switch(err.name) {
-                case 'NotAllowedError':
-                    errorMsg = '❌ Вы запретили доступ к камере/микрофону. Нажмите на иконку замка 🔒 в адресной строке и разрешите доступ для этого сайта, затем обновите страницу.';
-                    break;
-                case 'NotFoundError':
-                    errorMsg = '❌ Камера или микрофон не найдены на вашем устройстве.';
-                    break;
-                case 'NotReadableError':
-                    errorMsg = '❌ Камера/микрофон уже используются другим приложением (Zoom, Teams, Skype). Закройте их и попробуйте снова.';
-                    break;
-                case 'SecurityError':
-                    errorMsg = '❌ Ошибка безопасности. Убедитесь что страница открыта по HTTPS.';
-                    break;
-                default:
-                    errorMsg = '❌ Ошибка: ' + err.message;
-            }
-            
-            addSystemMessage(errorMsg, 'error-message');
-            
-            // Инструкция по ручному разрешению [citation:4][citation:7]
-            addSystemMessage('🔧 <strong>Как разрешить вручную:</strong><br>1. Нажмите на значок замка 🔒 в адресной строке<br>2. Найдите "Камера" и "Микрофон"<br>3. Выберите "Разрешить"<br>4. Обновите страницу', 'warning-message');
-            
+        } catch(e) {
+            addSystemMessage('❌ Нет доступа к камере: ' + e.message, 'error-message');
             return false;
         }
     }
     
-    // ========== ОТДЕЛЬНЫЙ ЗАПРОС ТОЛЬКО МИКРОФОНА ==========
-    async function requestMicrophoneOnly() {
+    async function requestMicrophone() {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             stream.getTracks().forEach(track => track.stop());
+            hasMic = true;
+            addSystemMessage('✅ Доступ к микрофону разрешён!', 'success-message');
+            localStorage.setItem('mic_granted_' + currentFingerprint, 'true');
             return true;
         } catch(e) {
-            addSystemMessage('❌ Нет доступа к микрофону. Разрешите доступ в настройках сайта.', 'error-message');
+            addSystemMessage('❌ Нет доступа к микрофону: ' + e.message, 'error-message');
             return false;
         }
     }
     
-    // ========== FINGERPRINT ==========
+    async function requestBoth() {
+        await requestCamera();
+        await requestMicrophone();
+        updatePermissionButtons();
+    }
+    
+    function updatePermissionButtons() {
+        const container = document.getElementById('permissionContainer');
+        if (container) {
+            if (hasCamera && hasMic) {
+                container.innerHTML = '<div class="system-message success-message">✅ Все разрешения получены! Можно звонить и записывать кружки.</div>';
+            } else {
+                container.innerHTML = `
+                    <div class="permission-buttons">
+                        <button class="perm-btn camera" id="reqCameraBtn">📷 Разрешить камеру</button>
+                        <button class="perm-btn mic" id="reqMicBtn">🎤 Разрешить микрофон</button>
+                        <button class="perm-btn both" id="reqBothBtn">🎥 Разрешить оба</button>
+                    </div>
+                `;
+                document.getElementById('reqCameraBtn')?.addEventListener('click', requestCamera);
+                document.getElementById('reqMicBtn')?.addEventListener('click', requestMicrophone);
+                document.getElementById('reqBothBtn')?.addEventListener('click', requestBoth);
+            }
+        }
+    }
+    
+    // ========== ОЧИСТКА СТАРЫХ ДАННЫХ И НАЗНАЧЕНИЕ АДМИНА ==========
+    async function cleanOldDataAndInit() {
+        const cleanFlag = localStorage.getItem('chat_cleaned_v3');
+        
+        if (!cleanFlag) {
+            addSystemMessage('🧹 Первый запуск новой версии. Очищаем старые данные...', 'system-message');
+            await db.ref('users').remove();
+            await db.ref('messages').remove();
+            await db.ref('calls').remove();
+            await db.ref('admin').remove();
+            localStorage.setItem('chat_cleaned_v3', 'true');
+            addSystemMessage('✅ Старые данные удалены. Первый зашедший станет администратором.', 'success-message');
+        }
+    }
+    
+    // ========== FINGERPRINT И ПОЛЬЗОВАТЕЛЬ ==========
     function getFingerprint() { 
         return new Promise((resolve) => { 
             Fingerprint2.get((components) => { 
@@ -285,10 +290,13 @@
         }); 
     }
     
-    // ========== ИНИЦИАЛИЗАЦИЯ ПОЛЬЗОВАТЕЛЯ ==========
     async function initUser() {
         const fp = await getFingerprint();
         currentFingerprint = fp;
+        
+        // Восстанавливаем сохранённые разрешения
+        hasCamera = localStorage.getItem('camera_granted_' + fp) === 'true';
+        hasMic = localStorage.getItem('mic_granted_' + fp) === 'true';
         
         const adminSnap = await db.ref('admin').once('value');
         const usersRef = db.ref('users');
@@ -300,42 +308,47 @@
                 currentUserName = c.val().name; 
                 currentUserAvatar = c.val().avatar || ''; 
             });
+            // Проверяем, является ли пользователь админом
+            const adminData = await db.ref('admin').once('value');
+            if (adminData.exists() && adminData.val().adminFingerprint === fp) isAdmin = true;
         } else {
-            if (!adminSnap.exists()) isAdmin = true;
+            // Новый пользователь
+            const adminExists = adminSnap.exists();
+            if (!adminExists) isAdmin = true;
+            
             currentUserName = 'User_' + Math.floor(Math.random() * 10000);
             const newUser = usersRef.push();
             currentUserId = newUser.key;
             await newUser.set({ fingerprint: fp, name: currentUserName, avatar: '', createdAt: Date.now() });
-            if (isAdmin) await db.ref('admin').set({ adminFingerprint: fp });
+            
+            if (isAdmin) {
+                await db.ref('admin').set({ adminFingerprint: fp, adminId: currentUserId });
+                addSystemMessage('👑 Вы стали администратором чата!', 'success-message');
+            }
         }
         
-        const adminData = await db.ref('admin').once('value');
-        if (adminData.exists() && adminData.val().adminFingerprint === fp) isAdmin = true;
         if (isAdmin) document.getElementById('adminBadge').style.display = 'inline-block';
         
         document.getElementById('headerAvatar').src = currentUserAvatar || `https://ui-avatars.com/api/?background=4a6cf7&color=fff&name=${encodeURIComponent(currentUserName)}`;
         document.getElementById('modalName').value = currentUserName;
         
-        // Проверяем были ли уже разрешения
-        const hadPermissions = localStorage.getItem('permissions_granted_' + fp);
-        if (hadPermissions === 'true') {
-            hasPermissions = true;
+        // Показываем кнопки запроса разрешений если нужно
+        if (!hasCamera || !hasMic) {
+            const permDiv = document.createElement('div');
+            permDiv.id = 'permissionContainer';
+            messagesArea.appendChild(permDiv);
+            updatePermissionButtons();
+        } else {
             addSystemMessage('✅ Разрешения на камеру и микрофон уже были выданы ранее.', 'success-message');
-        } else if (isSecureContext) {
-            // Добавляем КНОПКУ для запроса разрешений — только по клику! [citation:5]
-            const requestBtn = document.createElement('button');
-            requestBtn.className = 'permission-request-btn';
-            requestBtn.innerHTML = '🎥 Нажмите, чтобы разрешить доступ к камере и микрофону';
-            requestBtn.onclick = async () => {
-                requestBtn.disabled = true;
-                requestBtn.innerHTML = '⏳ Запрос разрешений...';
-                await requestPermissions();
-                requestBtn.remove();
-            };
-            messagesArea.appendChild(requestBtn);
-            messagesArea.scrollTop = messagesArea.scrollHeight;
         }
     }
+    
+    // ========== УДАЛЕНИЕ СООБЩЕНИЯ ==========
+    window.deleteMessage = async (messageId) => {
+        if (confirm('Удалить это сообщение?')) {
+            await db.ref('messages/' + messageId).remove();
+        }
+    };
     
     // ========== МЕССЕНДЖЕР ==========
     function setupMessaging() {
@@ -386,9 +399,7 @@
         
         // Голосовые
         document.getElementById('voiceBtn').onclick = async () => {
-            const hasMic = await requestMicrophoneOnly();
-            if (!hasMic) return;
-            
+            if (!hasMic) { alert('Сначала разрешите доступ к микрофону через кнопку выше!'); return; }
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 const mediaRecorder = new MediaRecorder(stream);
@@ -409,15 +420,13 @@
             } catch(e) { alert('Нет доступа к микрофону'); }
         };
         
-        // КРУЖКИ
+        // КРУЖКИ (видео-сообщения до 30 секунд)
         let circleRecorder = null, circleChunks = [], isCircleRecording = false, circleStream = null;
         const circleBtn = document.getElementById('circleVideoBtn');
         
         circleBtn.onclick = async () => {
-            if (!hasPermissions) {
-                alert('Сначала разрешите доступ к камере через кнопку выше!');
-                return;
-            }
+            if (!hasCamera) { alert('Сначала разрешите доступ к камере через кнопку выше!'); return; }
+            if (!hasMic) { alert('Для кружка нужен и микрофон. Разрешите доступ к микрофону!'); return; }
             
             if (isCircleRecording) {
                 if (circleRecorder && circleRecorder.state === 'recording') circleRecorder.stop();
@@ -452,12 +461,14 @@
                             circleBtn.innerHTML = '<i class="fas fa-circle"></i>';
                         }
                     }, 30000);
-                } catch(e) { alert('Нет доступа к камере'); }
+                } catch(e) { alert('Нет доступа к камере или микрофону для кружка'); }
             }
         };
         
+        // Получение сообщений с кнопкой удаления
         messagesRef.orderByChild('time').limitToLast(200).on('child_added', (snap) => {
             const msg = snap.val();
+            if (!msg) return;
             const isMe = msg.userId === currentUserId;
             const div = document.createElement('div');
             div.className = `message ${isMe ? 'my-message' : 'other-message'}`;
@@ -469,7 +480,15 @@
             } else if (msg.mediaType === 'audio') media = `<audio controls src="${msg.mediaUrl}" style="margin-top:6px;"></audio>`;
             
             const avatarUrl = msg.avatar || `https://ui-avatars.com/api/?background=6b4eff&color=fff&name=${encodeURIComponent(msg.name)}`;
-            div.innerHTML = `<div class="bubble"><div class="message-header">${!isMe ? `<img class="msg-avatar" src="${avatarUrl}">` : ''}<span class="message-name">${escapeHtml(msg.name)}</span></div>${msg.text && msg.text !== '🟢 Кружок' && msg.text !== '📷 Фото' && msg.text !== '🎥 Видео' ? `<div>${escapeHtml(msg.text)}</div>` : ''}${media}<span class="message-time">${new Date(msg.time).toLocaleTimeString()}</span></div>`;
+            const deleteBtn = isMe ? `<button class="delete-btn" onclick="deleteMessage('${snap.key}')"><i class="fas fa-trash"></i></button>` : '';
+            
+            div.innerHTML = `<div class="bubble">
+                ${deleteBtn}
+                <div class="message-header">${!isMe ? `<img class="msg-avatar" src="${avatarUrl}">` : ''}<span class="message-name">${escapeHtml(msg.name)}</span></div>
+                ${msg.text && msg.text !== '🟢 Кружок' && msg.text !== '📷 Фото' && msg.text !== '🎥 Видео' ? `<div>${escapeHtml(msg.text)}</div>` : ''}
+                ${media}
+                <span class="message-time">${new Date(msg.time).toLocaleTimeString()}</span>
+            </div>`;
             messagesArea.appendChild(div);
             messagesArea.scrollTop = messagesArea.scrollHeight;
         });
@@ -516,7 +535,7 @@
     
     async function startCall(isVideoCall = true) {
         if (isCallActive) { alert('Уже в звонке'); return; }
-        if (!hasPermissions) { alert('Сначала разрешите доступ к камере через кнопку выше!'); return; }
+        if (!hasCamera || !hasMic) { alert('Сначала разрешите доступ к камере и микрофону через кнопки выше!'); return; }
         
         try {
             localStream = await navigator.mediaDevices.getUserMedia({ video: isVideoCall, audio: true });
@@ -562,7 +581,7 @@
                 window.answerCall = async (accept) => {
                     document.getElementById('incomingCallModal').style.display = 'none';
                     if (!accept) { await callsRef.child(currentCallId).update({ active: false, rejected: true }); return; }
-                    if (!hasPermissions) { alert('Сначала разрешите доступ к камере!'); return; }
+                    if (!hasCamera || !hasMic) { alert('Сначала разрешите доступ к камере и микрофону!'); return; }
                     try {
                         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                         document.getElementById('localVideo').srcObject = localStream;
@@ -634,14 +653,16 @@
     document.getElementById('acceptCallBtn').onclick = () => window.acceptCall();
     document.getElementById('rejectCallBtn').onclick = () => window.rejectCall();
     
-    // Запуск
-    initUser().then(() => {
+    // ЗАПУСК
+    (async () => {
+        await cleanOldDataAndInit();
+        await initUser();
         setupMessaging();
         setupCallHandlers();
         setupProfile();
         setupTheme();
         listenForIncomingCalls();
-    });
+    })();
 </script>
 </body>
 </html>
