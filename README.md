@@ -2,10 +2,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>FullVideoChat | Звонки + Админ + Уведомления</title>
+    <title>FullVideoChat | Рабочие звонки</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
+    <script src="https://cdn.skypack.dev/webrtc-firebase@1.0.6"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
@@ -42,7 +42,6 @@
             --read-color: #34d399;
         }
         
-        /* Тёмная тема — ВЕСЬ ШРИФТ БЕЛЫЙ */
         body.dark, body.dark .chat-container, body.dark .messages-area, 
         body.dark .bubble, body.dark .message-name, body.dark .message-time,
         body.dark .system-message, body.dark .message-input, body.dark .message-input::placeholder,
@@ -53,16 +52,12 @@
             color: #ffffff !important;
         }
         
-        /* Фоны для тёмной темы */
         body.dark .other-message .bubble { background: #334155 !important; }
         body.dark .my-message .bubble { background: #3b82f6 !important; }
         body.dark .system-message { background: #1e293b !important; }
         body.dark .message-input { background: #334155 !important; border-color: #475569 !important; color: white !important; }
-        body.dark .message-input::placeholder { color: #94a3b8 !important; }
         body.dark .modal-content { background: #1e293b !important; }
-        body.dark .modal-content input { background: #334155 !important; border-color: #475569 !important; color: white !important; }
         body.dark .user-item { background: #0f172a !important; }
-        body.dark .admin-panel { background: rgba(0,0,0,0.97) !important; }
         
         body { background: var(--bg-body); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 16px; }
         .chat-container { width: 100%; max-width: 950px; height: 95vh; background: var(--chat-bg); border-radius: 28px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
@@ -90,13 +85,9 @@
         .message-time { font-size: 0.55rem; opacity: 0.7; margin-top: 4px; display: block; }
         .my-message .message-time { text-align: right; }
         
-        /* Галочки прочтения — ярко-зелёные */
         .read-status { font-size: 0.55rem; margin-left: 6px; opacity: 0.9; }
-        .read-status.sent { color: #94a3b8; }
-        .read-status.delivered { color: #f59e0b; }
         .read-status.read { color: var(--read-color); font-weight: bold; }
         
-        /* Кнопки удаления и редактирования */
         .delete-btn, .admin-delete-btn, .edit-btn { position: absolute; top: -8px; background: #ef4444; color: white; border: none; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; font-size: 10px; opacity: 0; transition: opacity 0.2s; z-index: 10; display: flex; align-items: center; justify-content: center; }
         .delete-btn { right: -8px; }
         .admin-delete-btn { right: 18px; background: #f59e0b; }
@@ -114,22 +105,21 @@
         .input-area { background: var(--input-bg); border-top: 1px solid var(--input-border); padding: 12px 16px; }
         .input-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         .message-input { flex: 1; padding: 12px 16px; border: 1px solid var(--input-border); border-radius: 25px; background: var(--input-bg); color: var(--input-text); outline: none; min-width: 120px; resize: vertical; }
-        .message-input:focus { outline: none; border-color: var(--icon-color); }
         .media-btn, .voice-btn, .camera-btn, .video-msg-btn { background: transparent; border: none; font-size: 1.3rem; cursor: pointer; color: var(--icon-color); width: 40px; height: 40px; border-radius: 50%; }
         .video-msg-btn.recording { background: #ef4444; color: white; animation: pulse 1s infinite; }
         .send-btn { background: var(--icon-color); color: white; border: none; width: 46px; height: 46px; border-radius: 50%; cursor: pointer; }
         
         @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
         
+        /* Видеозвонок */
         .call-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--call-overlay-bg); z-index: 2000; display: none; flex-direction: column; justify-content: center; align-items: center; }
-        .call-video-container { width: 100%; height: 80%; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 20px; padding: 20px; }
+        .call-video-container { width: 100%; height: 85%; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 20px; padding: 20px; }
         .local-video, .remote-video { width: 45%; height: 45%; background: #000; border-radius: 16px; object-fit: cover; }
         .call-controls { position: absolute; bottom: 30px; display: flex; justify-content: center; gap: 20px; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 60px; }
         .call-control-btn { background: #334155; border: none; width: 55px; height: 55px; border-radius: 50%; cursor: pointer; color: white; font-size: 1.5rem; }
         .call-control-btn.end-call { background: #ef4444; }
         
         .incoming-call-modal { position: fixed; bottom: 100px; left: 20px; right: 20px; max-width: 350px; background: var(--chat-bg); border-radius: 20px; padding: 20px; z-index: 2100; box-shadow: 0 10px 40px rgba(0,0,0,0.3); display: none; }
-        .incoming-call-modal h3 { color: var(--other-text); }
         
         .auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; display: flex; justify-content: center; align-items: center; }
         .auth-card { background: white; border-radius: 28px; padding: 32px; width: 90%; max-width: 400px; text-align: center; }
@@ -139,7 +129,6 @@
         .admin-panel { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2500; display: none; flex-direction: column; padding: 20px; overflow-y: auto; }
         .admin-panel h3 { color: white; margin-bottom: 20px; }
         .user-item { background: #1e293b; margin: 8px 0; padding: 12px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .user-item div { color: white; }
         .user-item button { padding: 6px 12px; border-radius: 20px; border: none; cursor: pointer; margin-left: 8px; }
         .close-admin { position: absolute; top: 20px; right: 20px; background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 30px; cursor: pointer; }
         
@@ -147,8 +136,6 @@
         .modal-content { background: var(--chat-bg); border-radius: 24px; padding: 24px; width: 90%; max-width: 500px; }
         .modal-content input, .modal-content button { margin-top: 12px; width: 100%; padding: 12px; border-radius: 24px; }
         .modal-content button { background: var(--icon-color); color: white; border: none; cursor: pointer; }
-        
-        .edit-textarea { width: 100%; padding: 8px; border-radius: 12px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--input-text); resize: vertical; font-family: inherit; }
         
         @media (max-width: 600px) { .local-video, .remote-video { width: 90%; height: 35%; } .message { max-width: 90%; } .circle-video { width: 130px; height: 130px; } }
     </style>
@@ -160,7 +147,7 @@
         <div class="header-left">
             <img id="headerAvatar" class="user-avatar" src="">
             <div class="header-text">
-                <h1>📹 FullVideoChat <span id="adminBadge" style="display:inline-block; background:#ef4444; padding:2px 8px; border-radius:12px; font-size:0.7rem;">ADMIN</span></h1>
+                <h1>📹 FullVideoChat <span class="admin-badge" style="display:inline-block; background:#ef4444; padding:2px 8px; border-radius:12px; font-size:0.7rem;">ADMIN</span></h1>
                 <p id="userPhoneDisplay"></p>
             </div>
         </div>
@@ -174,7 +161,7 @@
     <div class="messages-area" id="messagesArea"></div>
     <div class="input-area">
         <div class="input-row">
-            <textarea id="messageInput" class="message-input" placeholder="Сообщение... (Shift+Enter — новая строка, Enter — отправка)" rows="1" style="resize: vertical;"></textarea>
+            <textarea id="messageInput" class="message-input" placeholder="Сообщение... (Shift+Enter — новая строка)" rows="1" style="resize: vertical;"></textarea>
             <button class="camera-btn" id="photoBtn" title="Фото из галереи"><i class="fas fa-image"></i></button>
             <button class="camera-btn" id="takePhotoBtn" title="Сделать фото"><i class="fas fa-camera"></i></button>
             <button class="media-btn" id="videoFileBtn" title="Видео"><i class="fas fa-video"></i></button>
@@ -206,7 +193,6 @@
     <div class="call-controls">
         <button class="call-control-btn" id="toggleMuteBtn"><i class="fas fa-microphone"></i></button>
         <button class="call-control-btn" id="toggleVideoBtn"><i class="fas fa-video"></i></button>
-        <button class="call-control-btn" id="shareScreenBtn"><i class="fas fa-desktop"></i></button>
         <button class="call-control-btn end-call" id="endCallBtn"><i class="fas fa-phone-slash"></i></button>
     </div>
 </div>
@@ -241,12 +227,13 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const messaging = firebase.messaging.isSupported() ? firebase.messaging() : null;
     
     let currentUserId = null, currentUserPhone = null, currentUserName = null, currentUserAvatar = null;
-    let peerConnection = null, localStream = null, currentCallId = null, isCallActive = false, isMuted = false, isVideoOff = false;
+    let localStream = null;
     let audioCtx = null, ringtoneInterval = null;
-    let editingMessageId = null;
+    let rtcConnection = null;
+    let isInCall = false;
+    let currentCallRoomId = null;
     
     // Звук уведомления
     function playNotificationSound() {
@@ -280,21 +267,19 @@
     
     function showNotification(title, body) {
         if (Notification.permission === 'granted') {
-            new Notification(title, { body: body, icon: 'https://cdn-icons-png.flaticon.com/512/4712/4712109.png' });
+            new Notification(title, { body: body });
         }
         playNotificationSound();
     }
     
-    // Регистрация для Push-уведомлений
-    async function registerForPushNotifications() {
-        if (!messaging) return;
-        try {
-            const token = await messaging.getToken({ vapidKey: 'BDB4lGmZxG5qX7yQ9wE3rT5yU7iOp9kL1mN2oP3qR4sT5uV6wX7yZ8aB9cC0dD1eE2fF3gG4hH5iI6jJ7kK8lL9mM0nN' });
-            if (token) {
-                await db.ref('users/' + currentUserId).update({ fcmToken: token });
-            }
-        } catch(e) { console.log('Push registration error:', e); }
+    // ========== ПРОВЕРКА АДМИНА ПО НИКУ ==========
+function checkAdminByNick() {
+    // Администратор — пользователь с ником "DaniksGames" (регистр не важен)
+    if (currentUserName && currentUserName.toLowerCase() === 'daniksgames') {
+        return true;
     }
+    return false;
+}
     
     // ========== АВТОРИЗАЦИЯ ==========
     async function auth() {
@@ -327,7 +312,6 @@
         document.getElementById('userPhoneDisplay').innerText = normalizedPhone;
         document.getElementById('headerAvatar').src = `https://ui-avatars.com/api/?background=4a6cf7&color=fff&name=${encodeURIComponent(name)}`;
         
-        await registerForPushNotifications();
         initAll();
     }
     
@@ -345,7 +329,6 @@
                 document.getElementById('chatContainer').style.display = 'flex';
                 document.getElementById('userPhoneDisplay').innerText = currentUserPhone;
                 document.getElementById('headerAvatar').src = `https://ui-avatars.com/api/?background=4a6cf7&color=fff&name=${encodeURIComponent(currentUserName)}`;
-                await registerForPushNotifications();
                 initAll();
                 return true;
             }
@@ -353,17 +336,13 @@
         return false;
     }
     
-    // ========== УДАЛЕНИЕ И РЕДАКТИРОВАНИЕ ==========
+    // ========== УДАЛЕНИЕ ==========
     window.deleteMessage = async (messageId) => { if (confirm('Удалить?')) await db.ref('messages/' + messageId).remove(); };
     window.adminDeleteMessage = async (messageId) => { if (confirm('Удалить сообщение?')) await db.ref('messages/' + messageId).remove(); };
-    
     window.editMessage = async (messageId, currentText) => {
         const newText = prompt('Редактировать сообщение:', currentText);
-        if (newText && newText.trim()) {
-            await db.ref('messages/' + messageId).update({ text: newText.trim(), edited: true });
-        }
+        if (newText && newText.trim()) await db.ref('messages/' + messageId).update({ text: newText.trim(), edited: true });
     };
-    
     window.toggleBlockUser = async (userId, blocked) => { await db.ref('users/' + userId).update({ blocked: !blocked }); loadUsersList(); };
     window.deleteUserAccount = async (userId) => {
         if (confirm('Удалить аккаунт?')) {
@@ -397,7 +376,6 @@
         const sendBtn = document.getElementById('sendBtn');
         const messagesArea = document.getElementById('messagesArea');
         
-        // Shift+Enter для переноса строки, Enter для отправки
         messageInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -410,7 +388,7 @@
             messagesRef.push({ 
                 userId: currentUserId, name: currentUserName, phone: currentUserPhone, avatar: currentUserAvatar || '', 
                 text: text || '', time: Date.now(), mediaType: mediaType || null, mediaUrl: mediaUrl || null, 
-                isCircle: isCircle, read: false, delivered: false
+                isCircle: isCircle, read: false
             });
         };
         
@@ -472,16 +450,12 @@
             } else if(msg.mediaType==='audio') media=`<audio controls src="${msg.mediaUrl}"></audio>`;
             
             const avatarUrl = msg.avatar || `https://ui-avatars.com/api/?background=6b4eff&color=fff&name=${encodeURIComponent(msg.name)}`;
-            let readStatus = '';
-            if (isMe) {
-                if (msg.read) readStatus = '<span class="read-status read">✓✓ Прочитано</span>';
-                else if (msg.delivered) readStatus = '<span class="read-status delivered">✓✓ Доставлено</span>';
-                else readStatus = '<span class="read-status sent">✓ Отправлено</span>';
-            }
+            const readStatus = isMe ? (msg.read ? '<span class="read-status read">✓✓ Прочитано</span>' : '<span class="read-status">✓ Отправлено</span>') : '';
             const editedMark = msg.edited ? ' <span style="font-size:0.5rem;">(ред.)</span>' : '';
             const deleteBtn = isMe ? `<button class="delete-btn" onclick="deleteMessage('${snap.key}')"><i class="fas fa-trash"></i></button>` : '';
             const editBtn = isMe ? `<button class="edit-btn" onclick="editMessage('${snap.key}', '${escapeHtml(msg.text).replace(/'/g, "\\'")}')"><i class="fas fa-pen"></i></button>` : '';
-            const adminDeleteBtn = `<button class="admin-delete-btn" onclick="adminDeleteMessage('${snap.key}')"><i class="fas fa-crown"></i></button>`;
+const isNickAdmin = currentUserName && currentUserName.toLowerCase() === 'daniksgames';
+const adminDeleteBtn = isNickAdmin ? `<button class="admin-delete-btn" onclick="adminDeleteMessage('${snap.key}')"><i class="fas fa-crown"></i></button>` : '';
             
             div.innerHTML = `<div class="bubble">${deleteBtn}${editBtn}${adminDeleteBtn}<div class="message-header">${!isMe ? `<img class="msg-avatar" src="${avatarUrl}">` : ''}<span class="message-name">${escapeHtml(msg.name)}</span></div>${msg.text ? `<div>${escapeHtml(msg.text)}${editedMark}</div>` : ''}${media}<span class="message-time">${new Date(msg.time).toLocaleTimeString()} ${readStatus}</span></div>`;
             messagesArea.appendChild(div);
@@ -491,184 +465,179 @@
                 if(document.hidden) showNotification(msg.name, msg.text || 'Новое сообщение');
                 else playNotificationSound();
             }
-            if(!isMe && !msg.read) await db.ref('messages/'+snap.key).update({ read: true, readAt: Date.now() });
-            if(!isMe && !msg.delivered) await db.ref('messages/'+snap.key).update({ delivered: true });
+            if(!isMe && !msg.read) await db.ref('messages/'+snap.key).update({ read: true });
         });
     }
     
-    // ========== ЗВОНКИ (FIXED) ==========
-    const configuration = { 
-        iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' }
-        ],
-        iceCandidatePoolSize: 10
-    };
-    const callsRef = db.ref('calls');
-    let callListenerRef = null;
-    
+    // ========== ЗВОНКИ (ЧЕРЕЗ БИБЛИОТЕКУ fire-rtc) ==========
     async function startCall() {
-        if(isCallActive){ alert('Уже в звонке'); return; }
-        try{
+        if (isInCall) { alert('Уже в звонке'); return; }
+        
+        try {
+            // Получаем локальный поток
             localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             document.getElementById('localVideo').srcObject = localStream;
-            peerConnection = new RTCPeerConnection(configuration);
             
-            localStream.getTracks().forEach(track => {
-                peerConnection.addTrack(track, localStream);
-                console.log('Track added:', track.kind);
+            // Генерируем уникальный ID комнаты
+            const roomId = 'room_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
+            currentCallRoomId = roomId;
+            
+            // Создаём ссылку для приглашения
+            const callRef = db.ref('activeCalls/' + roomId);
+            await callRef.set({
+                from: currentUserId,
+                fromName: currentUserName,
+                roomId: roomId,
+                active: true,
+                timestamp: Date.now()
             });
             
-            peerConnection.ontrack = (event) => {
-                console.log('Got remote track:', event.streams[0]);
-                document.getElementById('remoteVideo').srcObject = event.streams[0];
-            };
+            // Создаём WebRTC соединение через библиотеку
+            // @ts-ignore - webrtc-firebase
+            const FireRTC = window.webrtcFirebase || (await import('https://cdn.skypack.dev/webrtc-firebase@1.0.6')).default;
             
-            peerConnection.onicecandidate = (event) => {
-                if(event.candidate && currentCallId) {
-                    console.log('ICE candidate:', event.candidate);
-                    db.ref('calls/'+currentCallId+'/candidates').push({ 
-                        candidate: event.candidate.toJSON(), 
-                        from: currentUserId, 
-                        time: Date.now() 
+            rtcConnection = new (window.webrtcFirebase?.Host || (await import('https://cdn.skypack.dev/webrtc-firebase@1.0.6')).Host)(
+                firebaseConfig,
+                [{ name: 'video', type: 'media' }],
+                (key) => {
+                    console.log('Room key generated:', key);
+                    // Отправляем приглашение всем пользователям
+                    db.ref('callsInvites').push({
+                        roomId: roomId,
+                        roomKey: key,
+                        from: currentUserId,
+                        fromName: currentUserName,
+                        timestamp: Date.now()
+                    });
+                }
+            );
+            
+            // @ts-ignore
+            rtcConnection.onConnectionSuccess = () => {
+                console.log('WebRTC connection established');
+                isInCall = true;
+                document.getElementById('callOverlay').style.display = 'flex';
+                
+                // Получаем медиа-канал
+                const videoChannel = rtcConnection.getChannel('video');
+                if (videoChannel && localStream) {
+                    localStream.getTracks().forEach(track => {
+                        videoChannel.addTrack(track, localStream);
                     });
                 }
             };
             
-            peerConnection.oniceconnectionstatechange = () => {
-                console.log('ICE state:', peerConnection.iceConnectionState);
-                if(peerConnection.iceConnectionState === 'connected') {
-                    console.log('Call connected successfully!');
+            // @ts-ignore
+            rtcConnection.onRemoteStream = (stream) => {
+                console.log('Got remote stream');
+                document.getElementById('remoteVideo').srcObject = stream;
+            };
+            
+            // @ts-ignore
+            rtcConnection.onSessionStateChange = (state) => {
+                console.log('Session state:', state);
+                if (state === 'ended') {
+                    endCall();
                 }
             };
             
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
+            // Удаляем приглашение через минуту если не ответили
+            setTimeout(async () => {
+                const inviteSnap = await db.ref('callsInvites').orderByChild('roomId').equalTo(roomId).once('value');
+                inviteSnap.forEach(inv => inv.ref.remove());
+            }, 60000);
             
-            currentCallId = 'call_'+Date.now()+'_'+Math.random().toString(36).substr(2,6);
-            await callsRef.child(currentCallId).set({ 
-                type:'offer', 
-                offer: { sdp: offer.sdp, type: offer.type }, 
-                from: currentUserId, 
-                fromName: currentUserName, 
-                timestamp: Date.now(), 
-                active: true 
-            });
-            
-            isCallActive = true;
-            document.getElementById('callOverlay').style.display = 'flex';
-            
-            // Слушаем ответ
-            callsRef.child(currentCallId).on('value', async (snap) => {
-                const data = snap.val();
-                if(!data) return;
-                
-                if(data.type === 'answer' && peerConnection && peerConnection.signalingState !== 'stable') {
-                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-                    console.log('Answer set');
-                }
-                
-                if(data.candidates) {
-                    const candSnap = await callsRef.child(currentCallId+'/candidates').once('value');
-                    if(candSnap.exists()) {
-                        candSnap.forEach(async (csnap) => {
-                            const cand = csnap.val();
-                            if(cand.from !== currentUserId && peerConnection) {
-                                try { 
-                                    await peerConnection.addIceCandidate(new RTCIceCandidate(cand.candidate));
-                                    console.log('ICE candidate added');
-                                } catch(e){ console.log('ICE error:', e); }
-                            }
-                        });
-                    }
-                }
-                
-                if(data.endCall) endCall();
-            });
-        } catch(e){ console.error('Start call error:', e); alert('Ошибка: '+e.message); }
+        } catch(e) {
+            console.error('Start call error:', e);
+            alert('Ошибка: ' + e.message);
+        }
     }
     
-    function listenForIncomingCalls() {
-        callsRef.on('child_added', (snap) => {
-            const call = snap.val();
-            if(call && call.from !== currentUserId && call.active && !isCallActive && !call.rejected && !call.answered) {
-                currentCallId = snap.key;
-                document.getElementById('callerName').innerHTML = `📞 ${call.fromName} звонит...`;
+    // Слушаем входящие приглашения
+    function listenForInvites() {
+        db.ref('callsInvites').on('child_added', (snap) => {
+            const invite = snap.val();
+            if (invite.from !== currentUserId && !isInCall) {
+                currentCallRoomId = invite.roomId;
+                document.getElementById('callerName').innerHTML = `📞 ${invite.fromName} звонит...`;
                 document.getElementById('incomingCallModal').style.display = 'block';
                 startRingtone();
-                if(document.hidden) showNotification('Входящий звонок', `${call.fromName} звонит вам`);
+                if (document.hidden) showNotification('Входящий звонок', `${invite.fromName} звонит вам`);
                 
                 window.answerCall = async (accept) => {
                     document.getElementById('incomingCallModal').style.display = 'none';
                     stopRingtone();
-                    if(!accept){ 
-                        await callsRef.child(currentCallId).update({ rejected:true, active:false }); 
-                        return; 
+                    
+                    if (!accept) {
+                        await db.ref('callsInvites/' + snap.key).remove();
+                        return;
                     }
-                    try{
+                    
+                    try {
                         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                         document.getElementById('localVideo').srcObject = localStream;
-                        peerConnection = new RTCPeerConnection(configuration);
                         
-                        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+                        // @ts-ignore
+                        const FireRTC = window.webrtcFirebase || (await import('https://cdn.skypack.dev/webrtc-firebase@1.0.6')).default;
                         
-                        peerConnection.ontrack = (event) => {
-                            document.getElementById('remoteVideo').srcObject = event.streams[0];
-                        };
-                        
-                        peerConnection.onicecandidate = (event) => {
-                            if(event.candidate) {
-                                db.ref('calls/'+currentCallId+'/candidates').push({ 
-                                    candidate: event.candidate.toJSON(), 
-                                    from: currentUserId, 
-                                    time: Date.now() 
-                                });
+                        rtcConnection = new (window.webrtcFirebase?.Guest || (await import('https://cdn.skypack.dev/webrtc-firebase@1.0.6')).Guest)(
+                            invite.roomKey,
+                            firebaseConfig,
+                            ['video'],
+                            () => {
+                                console.log('Guest connected');
+                                isInCall = true;
+                                document.getElementById('callOverlay').style.display = 'flex';
+                                
+                                const videoChannel = rtcConnection.getChannel('video');
+                                if (videoChannel && localStream) {
+                                    localStream.getTracks().forEach(track => {
+                                        videoChannel.addTrack(track, localStream);
+                                    });
+                                }
+                            },
+                            (state) => {
+                                if (state === 'ended') endCall();
                             }
+                        );
+                        
+                        // @ts-ignore
+                        rtcConnection.onRemoteStream = (stream) => {
+                            document.getElementById('remoteVideo').srcObject = stream;
                         };
                         
-                        await peerConnection.setRemoteDescription(new RTCSessionDescription(call.offer));
-                        const answer = await peerConnection.createAnswer();
-                        await peerConnection.setLocalDescription(answer);
-                        await callsRef.child(currentCallId).update({ 
-                            type:'answer', 
-                            answer: { sdp: answer.sdp, type: answer.type }, 
-                            answered: true 
-                        });
+                        await db.ref('callsInvites/' + snap.key).remove();
                         
-                        isCallActive = true;
-                        document.getElementById('callOverlay').style.display = 'flex';
-                        
-                        callsRef.child(currentCallId).on('value', (s)=>{ 
-                            if(s.val() && s.val().endCall) endCall(); 
-                        });
-                    } catch(e){ console.error('Answer error:', e); alert('Ошибка ответа'); }
+                    } catch(e) {
+                        console.error('Answer error:', e);
+                        alert('Ошибка ответа: ' + e.message);
+                    }
                 };
             }
         });
     }
     
     function endCall() {
-        if(peerConnection) peerConnection.close();
-        if(localStream) localStream.getTracks().forEach(t=>t.stop());
-        if(currentCallId) db.ref('calls/'+currentCallId).update({ endCall:true, active:false });
-        peerConnection=null; localStream=null; isCallActive=false; currentCallId=null;
+        if (rtcConnection) {
+            try { rtcConnection.disconnect(); } catch(e) {}
+            rtcConnection = null;
+        }
+        if (localStream) {
+            localStream.getTracks().forEach(t => t.stop());
+            localStream = null;
+        }
+        isInCall = false;
         document.getElementById('callOverlay').style.display = 'none';
         document.getElementById('localVideo').srcObject = null;
         document.getElementById('remoteVideo').srcObject = null;
+        if (currentCallRoomId) {
+            db.ref('activeCalls/' + currentCallRoomId).remove();
+            currentCallRoomId = null;
+        }
         stopRingtone();
     }
     
-    function setupCallHandlers() {
-        document.getElementById('callBtn').onclick = startCall;
-        document.getElementById('endCallBtn').onclick = endCall;
-        let muted=false, videoOff=false;
-        document.getElementById('toggleMuteBtn').onclick = () => { if(localStream){ muted=!muted; localStream.getAudioTracks().forEach(t=>t.enabled=!muted); document.getElementById('toggleMuteBtn').innerHTML=muted?'<i class="fas fa-microphone-slash"></i>':'<i class="fas fa-microphone"></i>'; } };
-        document.getElementById('toggleVideoBtn').onclick = () => { if(localStream){ videoOff=!videoOff; localStream.getVideoTracks().forEach(t=>t.enabled=!videoOff); document.getElementById('toggleVideoBtn').innerHTML=videoOff?'<i class="fas fa-video-slash"></i>':'<i class="fas fa-video"></i>'; } };
-        document.getElementById('shareScreenBtn').onclick = async () => { if(!peerConnection){ alert('Сначала начните звонок'); return; } try{ const screenStream = await navigator.mediaDevices.getDisplayMedia({ video:true }); const videoTrack = screenStream.getVideoTracks()[0]; const sender = peerConnection.getSenders().find(s=>s.track && s.track.kind==='video'); if(sender) sender.replaceTrack(videoTrack); videoTrack.onended = async () => { if(localStream){ const newTrack = localStream.getVideoTracks()[0]; if(sender && newTrack) sender.replaceTrack(newTrack); } }; } catch(e){ alert('Ошибка'); } };
-    }
-    
-    // ========== ПРОФИЛЬ ==========
+    // ========== ПРОФИЛЬ И ТЕМА ==========
     function setupProfile() {
         document.getElementById('settingsBtn').onclick = () => document.getElementById('profileModal').style.display = 'flex';
         document.getElementById('closeModalBtn').onclick = () => document.getElementById('profileModal').style.display = 'none';
@@ -693,23 +662,73 @@
         document.getElementById('themeToggle').onclick = () => { document.body.classList.toggle('dark'); localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light'); };
     }
     
-    function setupAdminPanel() {
-        document.getElementById('adminPanelBtn').onclick = () => { loadUsersList(); document.getElementById('adminPanel').style.display = 'flex'; };
-        document.getElementById('closeAdminBtn').onclick = () => document.getElementById('adminPanel').style.display = 'none';
-        document.getElementById('clearChatBtn').onclick = async () => { if(confirm('Очистить весь чат?')){ await db.ref('messages').remove(); const sys=document.createElement('div'); sys.className='system-message'; sys.innerText='👑 Админ очистил чат'; document.getElementById('messagesArea').appendChild(sys); } };
+function setupAdminPanel() {
+    const isNickAdmin = checkAdminByNick();
+    
+    if (!isNickAdmin) {
+        // Если не админ — скрываем кнопку и не добавляем обработчики
+        document.getElementById('adminPanelBtn').style.display = 'none';
+        return;
+    }
+    
+    document.getElementById('adminPanelBtn').onclick = () => { loadUsersList(); document.getElementById('adminPanel').style.display = 'flex'; };
+    document.getElementById('closeAdminBtn').onclick = () => document.getElementById('adminPanel').style.display = 'none';
+    document.getElementById('clearChatBtn').onclick = async () => { 
+        if(confirm('Очистить весь чат?')){ 
+            await db.ref('messages').remove(); 
+            const sys=document.createElement('div'); 
+            sys.className='system-message'; 
+            sys.innerText='👑 Админ очистил чат'; 
+            document.getElementById('messagesArea').appendChild(sys); 
+        } 
+    };
+}
+    
+    function setupCallUI() {
+        document.getElementById('callBtn').onclick = startCall;
+        document.getElementById('endCallBtn').onclick = endCall;
+        let muted = false, videoOff = false;
+        document.getElementById('toggleMuteBtn').onclick = () => {
+            if (localStream) {
+                muted = !muted;
+                localStream.getAudioTracks().forEach(t => t.enabled = !muted);
+                document.getElementById('toggleMuteBtn').innerHTML = muted ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
+            }
+        };
+        document.getElementById('toggleVideoBtn').onclick = () => {
+            if (localStream) {
+                videoOff = !videoOff;
+                localStream.getVideoTracks().forEach(t => t.enabled = !videoOff);
+                document.getElementById('toggleVideoBtn').innerHTML = videoOff ? '<i class="fas fa-video-slash"></i>' : '<i class="fas fa-video"></i>';
+            }
+        };
     }
     
     function escapeHtml(s) { if(!s) return ''; return s.replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
     
-    function initAll() {
-        initMessaging();
-        setupCallHandlers();
-        setupProfile();
-        setupTheme();
-        setupAdminPanel();
-        listenForIncomingCalls();
-        if(Notification.permission==='default') Notification.requestPermission();
+function initAll() {
+    // Проверка на администратора по нику
+    const isNickAdmin = checkAdminByNick();
+    
+    if (isNickAdmin) {
+        // Показываем админ-панель
+        document.getElementById('adminBadge').style.display = 'inline-block';
+        document.getElementById('adminPanelBtn').style.display = 'flex';
+        console.log('👑 Администратор DaniksGames авторизован');
+    } else {
+        // Скрываем админ-панель
+        document.getElementById('adminBadge').style.display = 'none';
+        document.getElementById('adminPanelBtn').style.display = 'none';
     }
+    
+    initMessaging();
+    setupCallUI();
+    setupProfile();
+    setupTheme();
+    setupAdminPanel();
+    listenForInvites();
+    if(Notification.permission==='default') Notification.requestPermission();
+}
     
     document.getElementById('authBtn').onclick = auth;
     document.getElementById('acceptCallBtn').onclick = () => { if(window.answerCall) window.answerCall(true); };
