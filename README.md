@@ -5,6 +5,7 @@
     <title>xaMOff Messenger | Звонки + Админ + Уведомления</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -58,6 +59,7 @@
         .icon-btn { background: rgba(255,255,255,0.2); border: none; width: 38px; height: 38px; border-radius: 50%; cursor: pointer; color: white; font-size: 1.1rem; transition: transform 0.2s, background 0.2s; }
         .icon-btn:hover { transform: scale(1.05); background: rgba(255,255,255,0.3); }
         .call-btn { background: #10b981; }
+        .logout-btn { background: #ef4444; }
         
         .messages-area { flex: 1; overflow-y: auto; padding: 16px; background: var(--message-area-bg); display: flex; flex-direction: column; gap: 10px; transition: var(--transition); }
         
@@ -156,6 +158,7 @@
             <button class="icon-btn" id="adminPanelBtn"><i class="fas fa-shield-alt"></i></button>
             <button class="icon-btn" id="settingsBtn"><i class="fas fa-user-cog"></i></button>
             <button class="icon-btn" id="themeToggle"><i class="fas fa-moon"></i></button>
+            <button class="icon-btn logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i></button>
         </div>
     </div>
     <div class="messages-area" id="messagesArea"></div>
@@ -203,12 +206,12 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    const storage = firebase.storage();
     const messaging = firebase.messaging.isSupported() ? firebase.messaging() : null;
     
     let currentUserId = null, currentUserPhone = null, currentUserName = null, currentUserAvatar = null, isBlocked = false;
     let peerConnection = null, localStream = null, currentCallId = null, isCallActive = false;
     let audioCtx = null, ringtoneInterval = null;
-    let editingMessageId = null;
     let voiceRecorder = null, voiceChunks = [], isVoiceRecording = false, voiceStream = null;
     
     function playNotificationSound() { try { if (!audioCtx) audioCtx = new AudioContext(); const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.frequency.value = 880; gain.gain.value = 0.2; osc.start(); gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.4); osc.stop(audioCtx.currentTime + 0.4); } catch(e) {} }
@@ -216,6 +219,14 @@
     function stopRingtone() { if (ringtoneInterval) { clearInterval(ringtoneInterval); ringtoneInterval = null; } }
     
     async function registerForPushNotifications() { if (!messaging) return; try { const token = await messaging.getToken({ vapidKey: 'BDB4lGmZxG5qX7yQ9wE3rT5yU7iOp9kL1mN2oP3qR4sT5uV6wX7yZ8aB9cC0dD1eE2fF3gG4hH5iI6jJ7kK8lL9mM0nN' }); if (token) await db.ref('users/' + currentUserId).update({ fcmToken: token }); } catch(e) { console.log('Push error:', e); } }
+    
+    // Выход из аккаунта
+    function logout() {
+        if (confirm('Выйти из аккаунта?')) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
     
     async function auth() {
         const phone = document.getElementById('phoneInput').value.trim().replace(/[^0-9+]/g, '');
@@ -239,6 +250,11 @@
         
         currentUserPhone = normalizedPhone; currentUserName = name;
         localStorage.setItem('userId', currentUserId); localStorage.setItem('userPhone', normalizedPhone); localStorage.setItem('userName', name);
+        
+        // Загружаем аватар из БД
+        const userData = (await db.ref('users/'+currentUserId).once('value')).val();
+        if (userData && userData.avatarUrl) currentUserAvatar = userData.avatarUrl;
+        
         document.getElementById('authOverlay').style.display = 'none';
         document.getElementById('chatContainer').style.display = 'flex';
         document.getElementById('userPhoneDisplay').innerText = normalizedPhone;
@@ -253,6 +269,7 @@
             const userSnap = await db.ref('users/' + savedUserId).once('value');
             if (userSnap.exists() && !userSnap.val().blocked) {
                 currentUserId = savedUserId; currentUserPhone = savedPhone; currentUserName = savedName || userSnap.val().name;
+                if (userSnap.val().avatarUrl) currentUserAvatar = userSnap.val().avatarUrl;
                 document.getElementById('authOverlay').style.display = 'none';
                 document.getElementById('chatContainer').style.display = 'flex';
                 document.getElementById('userPhoneDisplay').innerText = currentUserPhone;
@@ -263,6 +280,19 @@
             }
         }
         return false;
+    }
+    
+    // Загрузка аватара в Storage
+    async function uploadAvatar(file) {
+        const storageRef = storage.ref();
+        const avatarRef = storageRef.child(`avatars/${currentUserId}.jpg`);
+        await avatarRef.put(file);
+        const downloadUrl = await avatarRef.getDownloadURL();
+        await db.ref('users/'+currentUserId).update({ avatarUrl: downloadUrl });
+        // Обновляем все сообщения пользователя
+        const msgsSnap = await db.ref('messages').orderByChild('userId').equalTo(currentUserId).once('value');
+        msgsSnap.forEach(s => s.ref.update({ avatar: downloadUrl }));
+        return downloadUrl;
     }
     
     window.deleteMessage = async (messageId) => { if (confirm('Удалить?')) await db.ref('messages/' + messageId).remove(); };
@@ -312,32 +342,13 @@
         document.getElementById('videoFileBtn').onclick = () => document.getElementById('videoFileInput').click();
         document.getElementById('videoFileInput').onchange = (e) => { if(e.target.files[0] && e.target.files[0].size<=100*1024*1024){ const r=new FileReader(); r.onload=ev=>sendMessage('🎥 Видео','video',ev.target.result); r.readAsDataURL(e.target.files[0]); e.target.value=''; } else alert('Видео до 100МБ'); };
         
-        // Фикс голосовых: одна запись, стоп по кнопке
         document.getElementById('voiceBtn').onclick = async () => {
-            if (isVoiceRecording && voiceRecorder && voiceRecorder.state === 'recording') {
-                voiceRecorder.stop();
-                return;
-            }
+            if (isVoiceRecording && voiceRecorder && voiceRecorder.state === 'recording') { voiceRecorder.stop(); return; }
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            voiceStream = stream;
-            voiceRecorder = new MediaRecorder(stream);
-            voiceChunks = [];
+            voiceStream = stream; voiceRecorder = new MediaRecorder(stream); voiceChunks = [];
             voiceRecorder.ondataavailable = e => { if(e.data.size > 0) voiceChunks.push(e.data); };
-            voiceRecorder.onstop = () => { 
-                const blob = new Blob(voiceChunks, {type:'audio/webm'});
-                const r = new FileReader();
-                r.onload = e => sendMessage('🎤 Голосовое','audio',e.target.result);
-                r.readAsDataURL(blob);
-                if(voiceStream) voiceStream.getTracks().forEach(t=>t.stop());
-                voiceStream = null;
-                isVoiceRecording = false;
-                document.getElementById('voiceBtn').style.background = '';
-                document.getElementById('voiceBtn').style.color = '';
-            };
-            voiceRecorder.start();
-            isVoiceRecording = true;
-            const btn = document.getElementById('voiceBtn');
-            btn.style.background = '#ef4444'; btn.style.color = 'white';
+            voiceRecorder.onstop = () => { const blob = new Blob(voiceChunks, {type:'audio/webm'}); const r = new FileReader(); r.onload = e => sendMessage('🎤 Голосовое','audio',e.target.result); r.readAsDataURL(blob); if(voiceStream) voiceStream.getTracks().forEach(t=>t.stop()); voiceStream = null; isVoiceRecording = false; document.getElementById('voiceBtn').style.background = ''; };
+            voiceRecorder.start(); isVoiceRecording = true; const btn = document.getElementById('voiceBtn'); btn.style.background = '#ef4444'; btn.style.color = 'white';
             setTimeout(() => { if(isVoiceRecording && voiceRecorder && voiceRecorder.state === 'recording') voiceRecorder.stop(); }, 15000);
         };
         
@@ -347,7 +358,6 @@
             else { const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true }); circleStream=stream; circleRecorder=new MediaRecorder(stream,{mimeType:'video/webm'}); circleChunks=[]; circleRecorder.ondataavailable=e=>{ if(e.data.size>0) circleChunks.push(e.data); }; circleRecorder.onstop=()=>{ const blob=new Blob(circleChunks,{type:'video/webm'}); const r=new FileReader(); r.onload=e=>sendMessage('🟢 Кружок','video',e.target.result,true); r.readAsDataURL(blob); if(circleStream) circleStream.getTracks().forEach(t=>t.stop()); circleStream=null; }; circleRecorder.start(); isCircleRecording=true; document.getElementById('circleVideoBtn').classList.add('recording'); document.getElementById('circleVideoBtn').innerHTML='<i class="fas fa-stop"></i>'; setTimeout(()=>{ if(isCircleRecording && circleRecorder && circleRecorder.state==='recording'){ circleRecorder.stop(); isCircleRecording=false; document.getElementById('circleVideoBtn').classList.remove('recording'); document.getElementById('circleVideoBtn').innerHTML='<i class="fas fa-circle"></i>'; } },30000); }
         };
         
-        // Реалтайм прочтения
         messagesRef.on('child_changed', (snap) => { updateMessageReadStatus(snap.key, snap.val()); });
         messagesRef.orderByChild('time').limitToLast(200).on('child_added', async (snap) => {
             const msg = snap.val();
@@ -374,11 +384,7 @@
     
     function updateMessageReadStatus(messageId, msg) { const elements = document.querySelectorAll(`.message`); for(let el of elements) { if(el.innerHTML.includes(messageId) || el.querySelector(`[onclick*="deleteMessage('${messageId}']`)) { const statusSpan = el.querySelector('.read-status'); if(statusSpan && msg.userId === currentUserId) { if(msg.read) statusSpan.innerHTML = '✓✓ Прочитано'; else if(msg.delivered) statusSpan.innerHTML = '✓✓ Доставлено'; } } } }
     
-    // Звонки (упрощённо, но работоспособно)
-    const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
-    async function startCall() { alert('Функция звонков требует дополнительной настройки TURN сервера для стабильной работы в продакшене. Базовая версия работает через STUN.'); }
-    function listenForIncomingCalls() {}
-    function setupCallHandlers() { document.getElementById('callBtn').onclick = startCall; document.getElementById('endCallBtn').onclick = () => {}; }
+    function setupCallHandlers() { document.getElementById('callBtn').onclick = () => alert('Функция звонков требует TURN сервера'); document.getElementById('endCallBtn').onclick = () => {}; }
     
     async function setupProfile() {
         document.getElementById('settingsBtn').onclick = () => document.getElementById('profileModal').style.display = 'flex';
@@ -393,9 +399,14 @@
             await db.ref('users/'+currentUserId).update({ name: newName });
             const msgsSnap = await db.ref('messages').orderByChild('userId').equalTo(currentUserId).once('value');
             msgsSnap.forEach(s => s.ref.update({ name: newName }));
+            
             const avatarFile = document.getElementById('modalAvatar').files[0];
-            if(avatarFile && avatarFile.size<=2*1024*1024){ const r=new FileReader(); r.onload=async(e)=>{ currentUserAvatar=e.target.result; await db.ref('users/'+currentUserId).update({ avatar: currentUserAvatar }); const msgsSnap2 = await db.ref('messages').orderByChild('userId').equalTo(currentUserId).once('value'); msgsSnap2.forEach(s => s.ref.update({ avatar: currentUserAvatar })); updateHeaderAvatar(); document.getElementById('profileModal').style.display='none'; }; r.readAsDataURL(avatarFile); }
-            else { updateHeaderAvatar(); document.getElementById('profileModal').style.display='none'; }
+            if(avatarFile && avatarFile.size<=2*1024*1024){
+                const avatarUrl = await uploadAvatar(avatarFile);
+                currentUserAvatar = avatarUrl;
+                updateHeaderAvatar();
+            }
+            document.getElementById('profileModal').style.display='none';
         };
         document.getElementById('modalName').value = currentUserName;
     }
@@ -424,7 +435,7 @@
     setInterval(checkBlockStatus, 3000);
     
     function escapeHtml(s) { if(!s) return ''; return s.replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
-    function initAll() { initMessaging(); setupCallHandlers(); setupProfile(); setupTheme(); setupAdminPanel(); listenForIncomingCalls(); checkBlockStatus(); if(Notification.permission==='default') Notification.requestPermission(); }
+    function initAll() { initMessaging(); setupCallHandlers(); setupProfile(); setupTheme(); setupAdminPanel(); checkBlockStatus(); document.getElementById('logoutBtn').onclick = logout; if(Notification.permission==='default') Notification.requestPermission(); }
     
     document.getElementById('authBtn').onclick = auth;
     document.getElementById('acceptCallBtn').onclick = () => { if(window.answerCall) window.answerCall(true); };
