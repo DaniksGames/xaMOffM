@@ -272,15 +272,6 @@
         playNotificationSound();
     }
     
-    // ========== ПРОВЕРКА АДМИНА ПО НИКУ ==========
-function checkAdminByNick() {
-    // Администратор — пользователь с ником "DaniksGames" (регистр не важен)
-    if (currentUserName && currentUserName.toLowerCase() === 'daniksgames') {
-        return true;
-    }
-    return false;
-}
-    
     // ========== АВТОРИЗАЦИЯ ==========
     async function auth() {
         const phone = document.getElementById('phoneInput').value.trim().replace(/[^0-9+]/g, '');
@@ -454,8 +445,7 @@ function checkAdminByNick() {
             const editedMark = msg.edited ? ' <span style="font-size:0.5rem;">(ред.)</span>' : '';
             const deleteBtn = isMe ? `<button class="delete-btn" onclick="deleteMessage('${snap.key}')"><i class="fas fa-trash"></i></button>` : '';
             const editBtn = isMe ? `<button class="edit-btn" onclick="editMessage('${snap.key}', '${escapeHtml(msg.text).replace(/'/g, "\\'")}')"><i class="fas fa-pen"></i></button>` : '';
-const isNickAdmin = currentUserName && currentUserName.toLowerCase() === 'daniksgames';
-const adminDeleteBtn = isNickAdmin ? `<button class="admin-delete-btn" onclick="adminDeleteMessage('${snap.key}')"><i class="fas fa-crown"></i></button>` : '';
+            const adminDeleteBtn = `<button class="admin-delete-btn" onclick="adminDeleteMessage('${snap.key}')"><i class="fas fa-crown"></i></button>`;
             
             div.innerHTML = `<div class="bubble">${deleteBtn}${editBtn}${adminDeleteBtn}<div class="message-header">${!isMe ? `<img class="msg-avatar" src="${avatarUrl}">` : ''}<span class="message-name">${escapeHtml(msg.name)}</span></div>${msg.text ? `<div>${escapeHtml(msg.text)}${editedMark}</div>` : ''}${media}<span class="message-time">${new Date(msg.time).toLocaleTimeString()} ${readStatus}</span></div>`;
             messagesArea.appendChild(div);
@@ -662,27 +652,11 @@ const adminDeleteBtn = isNickAdmin ? `<button class="admin-delete-btn" onclick="
         document.getElementById('themeToggle').onclick = () => { document.body.classList.toggle('dark'); localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light'); };
     }
     
-function setupAdminPanel() {
-    const isNickAdmin = checkAdminByNick();
-    
-    if (!isNickAdmin) {
-        // Если не админ — скрываем кнопку и не добавляем обработчики
-        document.getElementById('adminPanelBtn').style.display = 'none';
-        return;
+    function setupAdminPanel() {
+        document.getElementById('adminPanelBtn').onclick = () => { loadUsersList(); document.getElementById('adminPanel').style.display = 'flex'; };
+        document.getElementById('closeAdminBtn').onclick = () => document.getElementById('adminPanel').style.display = 'none';
+        document.getElementById('clearChatBtn').onclick = async () => { if(confirm('Очистить весь чат?')){ await db.ref('messages').remove(); const sys=document.createElement('div'); sys.className='system-message'; sys.innerText='👑 Админ очистил чат'; document.getElementById('messagesArea').appendChild(sys); } };
     }
-    
-    document.getElementById('adminPanelBtn').onclick = () => { loadUsersList(); document.getElementById('adminPanel').style.display = 'flex'; };
-    document.getElementById('closeAdminBtn').onclick = () => document.getElementById('adminPanel').style.display = 'none';
-    document.getElementById('clearChatBtn').onclick = async () => { 
-        if(confirm('Очистить весь чат?')){ 
-            await db.ref('messages').remove(); 
-            const sys=document.createElement('div'); 
-            sys.className='system-message'; 
-            sys.innerText='👑 Админ очистил чат'; 
-            document.getElementById('messagesArea').appendChild(sys); 
-        } 
-    };
-}
     
     function setupCallUI() {
         document.getElementById('callBtn').onclick = startCall;
@@ -706,29 +680,15 @@ function setupAdminPanel() {
     
     function escapeHtml(s) { if(!s) return ''; return s.replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
     
-function initAll() {
-    // Проверка на администратора по нику
-    const isNickAdmin = checkAdminByNick();
-    
-    if (isNickAdmin) {
-        // Показываем админ-панель
-        document.getElementById('adminBadge').style.display = 'inline-block';
-        document.getElementById('adminPanelBtn').style.display = 'flex';
-        console.log('👑 Администратор DaniksGames авторизован');
-    } else {
-        // Скрываем админ-панель
-        document.getElementById('adminBadge').style.display = 'none';
-        document.getElementById('adminPanelBtn').style.display = 'none';
+    function initAll() {
+        initMessaging();
+        setupCallUI();
+        setupProfile();
+        setupTheme();
+        setupAdminPanel();
+        listenForInvites();
+        if(Notification.permission==='default') Notification.requestPermission();
     }
-    
-    initMessaging();
-    setupCallUI();
-    setupProfile();
-    setupTheme();
-    setupAdminPanel();
-    listenForInvites();
-    if(Notification.permission==='default') Notification.requestPermission();
-}
     
     document.getElementById('authBtn').onclick = auth;
     document.getElementById('acceptCallBtn').onclick = () => { if(window.answerCall) window.answerCall(true); };
