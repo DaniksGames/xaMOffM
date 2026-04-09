@@ -250,7 +250,7 @@
     (async () => {
         const snap = await db.ref('users').orderByChild('name').equalTo('DaniksGames').once('value');
         if(snap.exists()) snap.forEach(c => c.ref.update({ password: 'Dan10102011' }));
-        else await db.ref('users').push({ name: 'DaniksGames', password: 'Dan10102011', avatarUrl: '', blocked: false, createdAt: Date.now() });
+        else await db.ref('users').push({ name: 'DaniksGames', password: 'Dan10102011', avatarUrl: '', blocked: false, createdAt: Date.now(), online: false, lastSeen: Date.now() });
     })();
     
     let currentUserId = null, currentUserName = null, currentUserAvatar = null, isBlocked = false;
@@ -263,13 +263,28 @@
     let processedMsgIds = new Set();
     let onlineStatusInterval = null;
     
-    function playSound() { try { if(!audioCtx) audioCtx = new AudioContext(); const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value = 880; g.gain.value = 0.15; o.start(); g.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3); o.stop(audioCtx.currentTime + 0.3); } catch(e){} }
+    function playSound() { try { if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value = 880; g.gain.value = 0.15; o.start(); g.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3); o.stop(audioCtx.currentTime + 0.3); } catch(e){} }
     
     // Онлайн статус
-    function updateOnlineStatus() { if(currentUserId) db.ref('users/' + currentUserId).update({ lastSeen: Date.now(), online: true }); }
-    updateOnlineStatus();
+    function updateOnlineStatus() { 
+        if(currentUserId) {
+            db.ref('users/' + currentUserId).update({ lastSeen: Date.now(), online: true });
+        }
+    }
+    
+    // Устанавливаем онлайн при загрузке
+    if(currentUserId) updateOnlineStatus();
+    
+    // Обновляем статус каждые 15 секунд
     if(onlineStatusInterval) clearInterval(onlineStatusInterval);
     onlineStatusInterval = setInterval(updateOnlineStatus, 15000);
+    
+    // При закрытии страницы ставим оффлайн
+    window.addEventListener('beforeunload', () => {
+        if(currentUserId) {
+            db.ref('users/' + currentUserId).update({ online: false, lastSeen: Date.now() });
+        }
+    });
     
     async function getUserOnlineStatus(userId) {
         const snap = await db.ref('users/' + userId).once('value');
@@ -305,14 +320,33 @@
         const snap = await usersRef.orderByChild('name').equalTo(name).once('value');
         if(snap.exists()) {
             let found = false;
-            snap.forEach(c => { if(c.val().password === password) { currentUserId = c.key; currentUserName = c.val().name; currentUserAvatar = c.val().avatarUrl || null; found = true; } });
+            snap.forEach(c => { 
+                if(c.val().password === password) { 
+                    currentUserId = c.key; 
+                    currentUserName = c.val().name; 
+                    currentUserAvatar = c.val().avatarUrl || null;
+                    isBlocked = c.val().blocked || false;
+                    found = true; 
+                } 
+            });
             if(!found) { document.getElementById('authError').innerText = 'Неверный пароль'; return; }
         } else {
             const newUser = usersRef.push();
             currentUserId = newUser.key;
-            await newUser.set({ name, password, avatarUrl: '', blocked: false, createdAt: Date.now(), lastSeen: Date.now() });
-            currentUserName = name; currentUserAvatar = null;
+            await newUser.set({ name, password, avatarUrl: '', blocked: false, createdAt: Date.now(), lastSeen: Date.now(), online: true });
+            currentUserName = name; 
+            currentUserAvatar = null;
+            isBlocked = false;
         }
+        
+        if(isBlocked) {
+            document.getElementById('authError').innerText = 'Вы заблокированы';
+            return;
+        }
+        
+        // Устанавливаем онлайн статус
+        await db.ref('users/' + currentUserId).update({ online: true, lastSeen: Date.now() });
+        
         localStorage.setItem('userId', currentUserId);
         localStorage.setItem('userName', currentUserName);
         document.getElementById('authOverlay').style.display = 'none';
@@ -380,7 +414,7 @@
         replyingTo = null;
         document.getElementById('replyIndicator').style.display = 'none';
         document.getElementById('sidebar').classList.remove('open');
-        renderContacts(); // обновляем активный класс
+        renderContacts();
         loadMessages();
     };
     
@@ -533,11 +567,20 @@
     };
     
     async function setupProfile() {
-        document.getElementById('settingsBtn').onclick = () => document.getElementById('profileModal').style.display = 'flex';
+        document.getElementById('settingsBtn').onclick = () => {
+            document.getElementById('avatarPreview').src = currentUserAvatar || `https://ui-avatars.com/api/?background=4a6cf7&color=fff&name=${encodeURIComponent(currentUserName)}`;
+            document.getElementById('modalName').value = currentUserName;
+            document.getElementById('profileModal').style.display = 'flex';
+        };
         document.getElementById('closeModalBtn').onclick = () => document.getElementById('profileModal').style.display = 'none';
-        document.getElementById('avatarPreview').src = currentUserAvatar || `https://ui-avatars.com/api/?background=4a6cf7&color=fff&name=${encodeURIComponent(currentUserName)}`;
-        document.getElementById('modalName').value = currentUserName;
-        document.getElementById('modalAvatar').onchange = (e) => { if(e.target.files[0]) { const r = new FileReader(); r.onload = ev => document.getElementById('avatarPreview').src = ev.target.result; r.readAsDataURL(e.target.files[0]); } };
+        
+        document.getElementById('modalAvatar').onchange = (e) => { 
+            if(e.target.files[0]) { 
+                const r = new FileReader(); 
+                r.onload = ev => document.getElementById('avatarPreview').src = ev.target.result; 
+                r.readAsDataURL(e.target.files[0]); 
+            } 
+        };
         
         document.getElementById('saveProfileBtn').onclick = async () => {
             const saveBtn = document.getElementById('saveProfileBtn');
@@ -549,15 +592,22 @@
                     const check = await db.ref('users').orderByChild('name').equalTo(newName).once('value');
                     let taken = false;
                     check.forEach(c => { if(c.key !== currentUserId) taken = true; });
-                    if(taken) { alert('Ник занят'); saveBtn.innerText = '💾 Сохранить'; saveBtn.disabled = false; return; }
+                    if(taken) { 
+                        alert('Ник занят'); 
+                        saveBtn.innerText = '💾 Сохранить'; 
+                        saveBtn.disabled = false; 
+                        return; 
+                    }
                     currentUserName = newName;
                     await db.ref('users/' + currentUserId).update({ name: newName });
                     localStorage.setItem('userName', newName);
                     document.getElementById('sidebarName').innerText = newName;
+                    
                     // Обновляем имя во всех сообщениях
-                    const msgsSnap = await db.ref('group_messages').orderByChild('userId').equalTo(currentUserId).once('value');
-                    msgsSnap.forEach(m => m.ref.update({ name: newName }));
+                    const groupMsgs = await db.ref('group_messages').orderByChild('userId').equalTo(currentUserId).once('value');
+                    groupMsgs.forEach(m => m.ref.update({ name: newName }));
                 }
+                
                 const file = document.getElementById('modalAvatar').files[0];
                 if(file) {
                     const ref = storage.ref().child(`avatars/${currentUserId}.jpg`);
@@ -565,58 +615,96 @@
                     currentUserAvatar = await ref.getDownloadURL();
                     await db.ref('users/' + currentUserId).update({ avatarUrl: currentUserAvatar });
                     document.getElementById('sidebarAvatar').src = currentUserAvatar;
+                    
                     // Обновляем аватар во всех сообщениях
-                    const msgsSnap = await db.ref('group_messages').orderByChild('userId').equalTo(currentUserId).once('value');
-                    msgsSnap.forEach(m => m.ref.update({ avatar: currentUserAvatar }));
+                    const groupMsgs = await db.ref('group_messages').orderByChild('userId').equalTo(currentUserId).once('value');
+                    groupMsgs.forEach(m => m.ref.update({ avatar: currentUserAvatar }));
                 }
+                
                 document.getElementById('profileModal').style.display = 'none';
                 alert('✅ Профиль обновлён!');
                 loadContacts();
-            } catch(e) { alert('Ошибка: ' + e.message); }
-            finally { saveBtn.innerText = '💾 Сохранить'; saveBtn.disabled = false; }
+            } catch(e) { 
+                alert('Ошибка: ' + e.message); 
+            } finally { 
+                saveBtn.innerText = '💾 Сохранить'; 
+                saveBtn.disabled = false; 
+            }
         };
     }
     
-    function setupTheme() { if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark'); document.getElementById('themeToggle').onclick = () => { document.body.classList.toggle('dark'); localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light'); }; }
+    function setupTheme() { 
+        if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark'); 
+        document.getElementById('themeToggle').onclick = () => { 
+            document.body.classList.toggle('dark'); 
+            localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light'); 
+        }; 
+    }
     
     // Админ функции
     window.adminEditUser = async (userId, currentName, currentAvatarUrl) => {
         const newName = prompt('Новый никнейм:', currentName);
         if(newName && newName !== currentName) {
             const check = await db.ref('users').orderByChild('name').equalTo(newName).once('value');
-            if(check.exists()) { alert('Ник занят'); return; }
+            let exists = false;
+            check.forEach(c => { if(c.key !== userId) exists = true; });
+            if(exists) { alert('Ник занят'); return; }
             await db.ref('users/' + userId).update({ name: newName });
             const msgs = await db.ref('group_messages').orderByChild('userId').equalTo(userId).once('value');
             msgs.forEach(m => m.ref.update({ name: newName }));
             alert('Ник обновлён');
         }
-        const newPass = prompt('Новый пароль (оставьте пустым, чтобы не менять):');
-        if(newPass && newPass.trim()) await db.ref('users/' + userId).update({ password: newPass.trim() });
         
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = 'image/*';
-        fileInput.onchange = async (e) => {
-            if(e.target.files[0]) {
-                const ref = storage.ref().child(`avatars/${userId}.jpg`);
-                await ref.put(e.target.files[0]);
-                const url = await ref.getDownloadURL();
-                await db.ref('users/' + userId).update({ avatarUrl: url });
-                const msgs = await db.ref('group_messages').orderByChild('userId').equalTo(userId).once('value');
-                msgs.forEach(m => m.ref.update({ avatar: url }));
-                alert('Аватар обновлён');
-                loadAdminUsers();
-            }
-        };
-        fileInput.click();
+        const newPass = prompt('Новый пароль (оставьте пустым, чтобы не менять):');
+        if(newPass && newPass.trim()) {
+            await db.ref('users/' + userId).update({ password: newPass.trim() });
+            alert('Пароль обновлён');
+        }
+        
+        const changeAvatar = confirm('Хотите изменить аватар?');
+        if(changeAvatar) {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.onchange = async (e) => {
+                if(e.target.files[0]) {
+                    try {
+                        const ref = storage.ref().child(`avatars/${userId}.jpg`);
+                        await ref.put(e.target.files[0]);
+                        const url = await ref.getDownloadURL();
+                        await db.ref('users/' + userId).update({ avatarUrl: url });
+                        const msgs = await db.ref('group_messages').orderByChild('userId').equalTo(userId).once('value');
+                        msgs.forEach(m => m.ref.update({ avatar: url }));
+                        alert('Аватар обновлён');
+                        loadAdminUsers();
+                    } catch(err) {
+                        alert('Ошибка загрузки аватара: ' + err.message);
+                    }
+                }
+            };
+            fileInput.click();
+        }
+        
         loadAdminUsers();
     };
     
     async function setupAdmin() {
         const isAdmin = currentUserName === 'DaniksGames';
-        document.getElementById('adminPanelBtn').onclick = () => { if(isAdmin) { loadAdminUsers(); document.getElementById('adminPanel').style.display = 'flex'; } else alert('Доступ только у DaniksGames'); };
+        document.getElementById('adminPanelBtn').onclick = () => { 
+            if(isAdmin) { 
+                loadAdminUsers(); 
+                document.getElementById('adminPanel').style.display = 'flex'; 
+            } else {
+                alert('Доступ только у DaniksGames'); 
+            }
+        };
         document.getElementById('closeAdminBtn').onclick = () => document.getElementById('adminPanel').style.display = 'none';
-        document.getElementById('clearChatBtn').onclick = async () => { if(isAdmin && confirm('Очистить общий чат?')) await db.ref('group_messages').remove(); };
+        document.getElementById('clearChatBtn').onclick = async () => { 
+            if(isAdmin && confirm('Очистить общий чат?')) {
+                await db.ref('group_messages').remove();
+                alert('Чат очищен');
+            }
+        };
     }
     
     async function loadAdminUsers() {
@@ -625,19 +713,41 @@
         container.innerHTML = '<h4 style="color:white;">Пользователи:</h4>';
         for(let id in users.val()) {
             const u = users.val()[id];
-            container.innerHTML += `<div class="user-item"><div><strong>${escapeHtml(u.name)}</strong><br>🔑 ${u.password}<br>${u.blocked ? '🔒 Заблокирован' : '✅ Активен'}</div>
+            container.innerHTML += `<div class="user-item">
                 <div>
-                    <button style="background:#8b5cf6;" onclick="adminEditUser('${id}', '${escapeHtml(u.name)}', '${u.avatarUrl || ''}')">✏️ Ред.</button>
-                    <button style="background:#f59e0b;" onclick="toggleBlock('${id}', ${u.blocked})">${u.blocked ? '🔓 Разблок' : '🔒 Блок'}</button>
+                    <strong>${escapeHtml(u.name)}</strong><br>
+                    🔑 ${u.password}<br>
+                    ${u.blocked ? '🔒 Заблокирован' : '✅ Активен'}<br>
+                    ${u.online ? '🟢 В сети' : '⚫ Не в сети'}
+                </div>
+                <div>
+                    <button style="background:#8b5cf6;" onclick="adminEditUser('${id}', '${escapeHtml(u.name).replace(/'/g, "\\'")}', '${u.avatarUrl || ''}')">✏️ Ред.</button>
+                    <button style="background:#f59e0b;" onclick="toggleBlock('${id}', ${u.blocked || false})">${u.blocked ? '🔓 Разблок' : '🔒 Блок'}</button>
                     <button style="background:#ef4444;" onclick="deleteAccount('${id}')">🗑️</button>
-                </div></div>`;
+                </div>
+            </div>`;
         }
     }
     
-    window.toggleBlock = async (id, blocked) => { await db.ref('users/' + id).update({ blocked: !blocked }); loadAdminUsers(); };
-    window.deleteAccount = async (id) => { if(confirm('Удалить аккаунт?')) { await db.ref('users/' + id).remove(); loadAdminUsers(); } };
+    window.toggleBlock = async (id, blocked) => { 
+        await db.ref('users/' + id).update({ blocked: !blocked }); 
+        loadAdminUsers(); 
+    };
     
-    function escapeHtml(s) { if(!s) return ''; return s.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+    window.deleteAccount = async (id) => { 
+        if(confirm('Удалить аккаунт навсегда?')) { 
+            await db.ref('users/' + id).remove();
+            // Удаляем все сообщения пользователя
+            const groupMsgs = await db.ref('group_messages').orderByChild('userId').equalTo(id).once('value');
+            groupMsgs.forEach(m => m.ref.remove());
+            loadAdminUsers(); 
+        } 
+    };
+    
+    function escapeHtml(s) { 
+        if(!s) return ''; 
+        return s.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); 
+    }
     
     async function initAll() {
         await loadContacts();
@@ -645,13 +755,32 @@
         setupTheme();
         setupAdmin();
         document.getElementById('sendBtn').onclick = sendTextMessage;
-        document.getElementById('messageInput').addEventListener('keydown', (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendTextMessage(); } });
-        document.getElementById('cancelReplyBtn').onclick = () => { replyingTo = null; document.getElementById('replyIndicator').style.display = 'none'; };
+        document.getElementById('messageInput').addEventListener('keydown', (e) => { 
+            if(e.key === 'Enter' && !e.shiftKey) { 
+                e.preventDefault(); 
+                sendTextMessage(); 
+            } 
+        });
+        document.getElementById('cancelReplyBtn').onclick = () => { 
+            replyingTo = null; 
+            document.getElementById('replyIndicator').style.display = 'none'; 
+        };
         document.getElementById('searchInput').oninput = searchUser;
-        document.getElementById('logoutBtn').onclick = () => { localStorage.clear(); location.reload(); };
+        document.getElementById('logoutBtn').onclick = () => { 
+            if(currentUserId) {
+                db.ref('users/' + currentUserId).update({ online: false, lastSeen: Date.now() });
+            }
+            localStorage.clear(); 
+            location.reload(); 
+        };
         document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
         switchChat('global', '🌐 Общий чат', true);
         if(Notification.permission === 'default') Notification.requestPermission();
+        
+        // Устанавливаем онлайн статус
+        if(currentUserId) {
+            await db.ref('users/' + currentUserId).update({ online: true, lastSeen: Date.now() });
+        }
     }
     
     document.getElementById('authBtn').onclick = auth;
@@ -660,7 +789,14 @@
         if(uid) {
             const snap = await db.ref('users/' + uid).once('value');
             if(snap.exists() && !snap.val().blocked) {
-                currentUserId = uid; currentUserName = snap.val().name; currentUserAvatar = snap.val().avatarUrl;
+                currentUserId = uid; 
+                currentUserName = snap.val().name; 
+                currentUserAvatar = snap.val().avatarUrl;
+                isBlocked = snap.val().blocked || false;
+                
+                // Устанавливаем онлайн статус
+                await db.ref('users/' + uid).update({ online: true, lastSeen: Date.now() });
+                
                 document.getElementById('authOverlay').style.display = 'none';
                 document.getElementById('appContainer').style.display = 'flex';
                 document.getElementById('sidebarName').innerText = currentUserName;
