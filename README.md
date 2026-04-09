@@ -29,7 +29,7 @@
             --online-color: #10b981;
             --offline-color: #94a3b8;
             --contact-hover: #e2e8f0;
-            --active-chat: #e0e7ff;
+            --active-chat: #dbeafe;
             --transition: all 0.2s ease;
         }
         
@@ -54,7 +54,6 @@
         
         .app-container { width: 100%; max-width: 1300px; height: 95vh; background: var(--chat-bg); border-radius: 24px; display: flex; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); transition: var(--transition); }
         
-        /* Sidebar */
         .sidebar { width: 320px; background: var(--sidebar-bg); border-right: 1px solid var(--input-border); display: flex; flex-direction: column; transition: var(--transition); }
         .sidebar-header { background: var(--header-bg); color: white; padding: 16px; }
         .sidebar-header h2 { font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
@@ -65,15 +64,16 @@
         .contacts-list { flex: 1; overflow-y: auto; }
         .contact-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; cursor: pointer; transition: var(--transition); border-bottom: 1px solid var(--input-border); }
         .contact-item:hover { background: var(--contact-hover); }
-        .contact-item.active { background: var(--active-chat); }
-        .contact-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; position: relative; }
-        .contact-info { flex: 1; }
-        .contact-name { font-weight: 600; color: var(--other-text); }
-        .contact-last-msg { font-size: 0.7rem; opacity: 0.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+        .contact-item.active { background: var(--active-chat); border-left: 3px solid var(--icon-color); }
+        .contact-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
+        .avatar-wrapper { position: relative; }
         .online-badge { position: absolute; bottom: 2px; right: 2px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--sidebar-bg); }
         .online-badge.online { background: var(--online-color); }
+        .online-badge.offline { background: var(--offline-color); }
+        .contact-info { flex: 1; }
+        .contact-name { font-weight: 600; color: var(--other-text); }
+        .contact-status { font-size: 0.65rem; opacity: 0.7; margin-top: 2px; }
         
-        /* Chat Main */
         .chat-main { flex: 1; display: flex; flex-direction: column; background: var(--chat-bg); }
         .chat-header { background: var(--header-bg); color: white; padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
         .chat-header-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
@@ -116,7 +116,6 @@
         .media-btn:active, .voice-btn:active, .camera-btn:active, .video-msg-btn:active { transform: scale(0.9); }
         .video-msg-btn.recording { background: #ef4444; color: white; animation: pulse 1s infinite; }
         .send-btn { background: var(--icon-color); color: white; border: none; width: 48px; height: 48px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; }
-        .send-btn:active { transform: scale(0.95); }
         
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -125,7 +124,6 @@
         .system-message { text-align: center; font-size: 0.7rem; background: var(--system-bg); padding: 6px 12px; border-radius: 20px; margin: 4px auto; width: fit-content; }
         .highlight-message { animation: highlight 1s; }
         
-        /* Modals */
         .modal, .auth-overlay, .admin-panel { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; display: none; justify-content: center; align-items: center; }
         .auth-card, .modal-content { background: white; border-radius: 28px; padding: 28px; width: 90%; max-width: 400px; text-align: center; }
         .auth-card input, .modal-content input { width: 100%; padding: 14px; margin: 12px 0; border-radius: 30px; border: 1px solid #ddd; font-size: 1rem; }
@@ -134,10 +132,10 @@
         
         .admin-panel { flex-direction: column; padding: 20px; overflow-y: auto; z-index: 2500; }
         .admin-panel h3 { color: white; margin-bottom: 20px; }
-        .user-item { background: #1e293b; margin: 8px 0; padding: 12px; border-radius: 16px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; color: white; }
+        .user-item { background: #1e293b; margin: 8px 0; padding: 12px; border-radius: 16px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; color: white; align-items: center; }
+        .user-item button { padding: 6px 12px; border-radius: 20px; border: none; cursor: pointer; margin-left: 5px; }
         .close-admin { position: absolute; top: 20px; right: 20px; background: #ef4444; padding: 10px 20px; border: none; border-radius: 30px; color: white; cursor: pointer; }
         
-        /* Mobile */
         @media (max-width: 700px) {
             body { padding: 0; }
             .app-container { border-radius: 0; height: 100vh; }
@@ -146,14 +144,9 @@
             .chat-main { width: 100%; }
             .message { max-width: 90%; }
             .circle-video { width: 130px; height: 130px; }
-            .media-content, .video-content { max-width: 150px; }
-            .chat-header-buttons .icon-btn { width: 34px; height: 34px; font-size: 0.9rem; }
-            .input-row { gap: 6px; }
-            .media-btn, .voice-btn, .camera-btn, .video-msg-btn { width: 38px; height: 38px; font-size: 1.1rem; }
+            .menu-toggle { display: block; background: rgba(255,255,255,0.2); border: none; width: 40px; height: 40px; border-radius: 50%; color: white; font-size: 1.2rem; cursor: pointer; }
         }
-        
-        .menu-toggle { display: none; background: rgba(255,255,255,0.2); border: none; width: 40px; height: 40px; border-radius: 50%; color: white; font-size: 1.2rem; cursor: pointer; }
-        @media (max-width: 700px) { .menu-toggle { display: block; } }
+        .menu-toggle { display: none; }
         
         .blocked-message { text-align: center; color: #ef4444; padding: 20px; }
     </style>
@@ -261,15 +254,48 @@
     })();
     
     let currentUserId = null, currentUserName = null, currentUserAvatar = null, isBlocked = false;
-    let currentChat = { type: 'group', id: 'global' };
+    let currentChat = { type: 'group', id: 'global', name: 'Общий чат' };
     let replyingTo = null;
     let contacts = [];
     let audioCtx = null;
     let voiceRecorder = null, voiceChunks = [], isVoiceRecording = false, voiceStream = null;
     let circleRecorder = null, circleChunks = [], isCircleRecording = false, circleStream = null;
     let processedMsgIds = new Set();
+    let onlineStatusInterval = null;
     
     function playSound() { try { if(!audioCtx) audioCtx = new AudioContext(); const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value = 880; g.gain.value = 0.15; o.start(); g.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3); o.stop(audioCtx.currentTime + 0.3); } catch(e){} }
+    
+    // Онлайн статус
+    function updateOnlineStatus() { if(currentUserId) db.ref('users/' + currentUserId).update({ lastSeen: Date.now(), online: true }); }
+    updateOnlineStatus();
+    if(onlineStatusInterval) clearInterval(onlineStatusInterval);
+    onlineStatusInterval = setInterval(updateOnlineStatus, 15000);
+    
+    async function getUserOnlineStatus(userId) {
+        const snap = await db.ref('users/' + userId).once('value');
+        const user = snap.val();
+        if(!user) return false;
+        if(user.online) return true;
+        if(user.lastSeen && (Date.now() - user.lastSeen) < 60000) return true;
+        return false;
+    }
+    
+    async function updateAllOnlineStatuses() {
+        for(let contact of contacts) {
+            if(!contact.isGroup) {
+                const isOnline = await getUserOnlineStatus(contact.id);
+                const dot = document.getElementById(`online-${contact.id}`);
+                const statusSpan = document.getElementById(`status-${contact.id}`);
+                if(dot) dot.className = `online-badge ${isOnline ? 'online' : 'offline'}`;
+                if(statusSpan) statusSpan.innerText = isOnline ? '🟢 В сети' : '⚫ Не в сети';
+            }
+        }
+        if(currentChat.type === 'user') {
+            const isOnline = await getUserOnlineStatus(currentChat.id);
+            document.getElementById('chatHeaderStatus').innerText = isOnline ? '🟢 В сети' : '⚫ Не в сети';
+        }
+    }
+    setInterval(updateAllOnlineStatuses, 5000);
     
     async function auth() {
         const name = document.getElementById('loginName').value.trim();
@@ -306,11 +332,7 @@
                 if(!exists.exists()) await contactsRef.push({ userId: d.key, name: d.val().name, avatar: d.val().avatarUrl || '', addedAt: Date.now() });
             });
         }
-        updateOnlineStatus();
-        setInterval(updateOnlineStatus, 20000);
     }
-    
-    function updateOnlineStatus() { if(currentUserId) db.ref('users/' + currentUserId).update({ lastSeen: Date.now(), online: true }); }
     
     async function loadContacts() {
         const contactsRef = db.ref('users/' + currentUserId + '/contacts');
@@ -330,36 +352,35 @@
         const container = document.getElementById('contactsList');
         container.innerHTML = contacts.map(c => `
             <div class="contact-item ${currentChat.id === c.id ? 'active' : ''}" onclick="switchChat('${c.id}', '${c.name.replace(/'/g, "\\'")}', ${c.isGroup ? 'true' : 'false'})">
-                <div style="position:relative;">
+                <div class="avatar-wrapper">
                     <img class="contact-avatar" src="${c.avatar || `https://ui-avatars.com/api/?background=4a6cf7&color=fff&name=${encodeURIComponent(c.name)}`}">
-                    <div class="online-badge ${c.isGroup ? '' : 'offline'}" id="online-${c.id}"></div>
+                    <div class="online-badge offline" id="online-${c.id}"></div>
                 </div>
                 <div class="contact-info">
                     <div class="contact-name">${c.name}</div>
-                    <div class="contact-last-msg">---</div>
+                    <div class="contact-status" id="status-${c.id}">${c.isGroup ? '👥 Группа' : '🔄 Загрузка...'}</div>
                 </div>
             </div>
         `).join('');
-        contacts.forEach(c => { if(!c.isGroup) updateUserOnlineStatus(c.id); });
+        updateAllOnlineStatuses();
     }
     
-    async function updateUserOnlineStatus(userId) {
-        const snap = await db.ref('users/' + userId).once('value');
-        const user = snap.val();
-        const isOnline = user?.online || (user?.lastSeen && Date.now() - user.lastSeen < 60000);
-        const dot = document.getElementById(`online-${userId}`);
-        if(dot) dot.className = `online-badge ${isOnline ? 'online' : 'offline'}`;
-    }
-    
-    window.switchChat = (chatId, chatName, isGroup) => {
+    window.switchChat = async (chatId, chatName, isGroup) => {
         currentChat = { type: isGroup ? 'group' : 'user', id: chatId, name: chatName };
         document.getElementById('chatHeaderName').innerText = chatName;
-        document.getElementById('chatHeaderStatus').innerText = isGroup ? 'Групповой чат' : 'Личный чат';
-        const avatar = contacts.find(c => c.id === chatId)?.avatar || `https://ui-avatars.com/api/?background=4a6cf7&color=fff&name=${encodeURIComponent(chatName)}`;
+        if(isGroup) {
+            document.getElementById('chatHeaderStatus').innerText = '👥 Групповой чат';
+        } else {
+            const isOnline = await getUserOnlineStatus(chatId);
+            document.getElementById('chatHeaderStatus').innerHTML = isOnline ? '🟢 В сети' : '⚫ Не в сети';
+        }
+        const contact = contacts.find(c => c.id === chatId);
+        const avatar = contact?.avatar || `https://ui-avatars.com/api/?background=4a6cf7&color=fff&name=${encodeURIComponent(chatName)}`;
         document.getElementById('chatHeaderAvatar').src = avatar;
         replyingTo = null;
         document.getElementById('replyIndicator').style.display = 'none';
         document.getElementById('sidebar').classList.remove('open');
+        renderContacts(); // обновляем активный класс
         loadMessages();
     };
     
@@ -475,7 +496,7 @@
         container.innerHTML = results.map(u => `
             <div class="contact-item" onclick="addContact('${u.id}', '${u.name.replace(/'/g, "\\'")}')">
                 <img class="contact-avatar" src="${u.avatar || `https://ui-avatars.com/api/?background=4a6cf7&color=fff&name=${encodeURIComponent(u.name)}`}">
-                <div class="contact-info"><div class="contact-name">${escapeHtml(u.name)}</div><div class="contact-last-msg">➕ Нажмите, чтобы добавить</div></div>
+                <div class="contact-info"><div class="contact-name">${escapeHtml(u.name)}</div><div class="contact-status">➕ Нажмите, чтобы добавить</div></div>
             </div>
         `).join('');
         if(results.length === 0) container.innerHTML = '<div style="padding:20px; text-align:center;">Пользователь не найден</div>';
@@ -517,29 +538,79 @@
         document.getElementById('avatarPreview').src = currentUserAvatar || `https://ui-avatars.com/api/?background=4a6cf7&color=fff&name=${encodeURIComponent(currentUserName)}`;
         document.getElementById('modalName').value = currentUserName;
         document.getElementById('modalAvatar').onchange = (e) => { if(e.target.files[0]) { const r = new FileReader(); r.onload = ev => document.getElementById('avatarPreview').src = ev.target.result; r.readAsDataURL(e.target.files[0]); } };
+        
         document.getElementById('saveProfileBtn').onclick = async () => {
-            const newName = document.getElementById('modalName').value.trim();
-            if(newName && newName !== currentUserName) {
-                const check = await db.ref('users').orderByChild('name').equalTo(newName).once('value');
-                if(check.exists()) { alert('Ник занят'); return; }
-                currentUserName = newName;
-                await db.ref('users/' + currentUserId).update({ name: newName });
-                localStorage.setItem('userName', newName);
-                document.getElementById('sidebarName').innerText = newName;
-            }
-            const file = document.getElementById('modalAvatar').files[0];
-            if(file) {
-                const ref = storage.ref().child(`avatars/${currentUserId}.jpg`);
-                await ref.put(file);
-                currentUserAvatar = await ref.getDownloadURL();
-                await db.ref('users/' + currentUserId).update({ avatarUrl: currentUserAvatar });
-            }
-            document.getElementById('profileModal').style.display = 'none';
-            loadContacts();
+            const saveBtn = document.getElementById('saveProfileBtn');
+            saveBtn.innerText = '⏳ Сохранение...';
+            saveBtn.disabled = true;
+            try {
+                const newName = document.getElementById('modalName').value.trim();
+                if(newName && newName !== currentUserName) {
+                    const check = await db.ref('users').orderByChild('name').equalTo(newName).once('value');
+                    let taken = false;
+                    check.forEach(c => { if(c.key !== currentUserId) taken = true; });
+                    if(taken) { alert('Ник занят'); saveBtn.innerText = '💾 Сохранить'; saveBtn.disabled = false; return; }
+                    currentUserName = newName;
+                    await db.ref('users/' + currentUserId).update({ name: newName });
+                    localStorage.setItem('userName', newName);
+                    document.getElementById('sidebarName').innerText = newName;
+                    // Обновляем имя во всех сообщениях
+                    const msgsSnap = await db.ref('group_messages').orderByChild('userId').equalTo(currentUserId).once('value');
+                    msgsSnap.forEach(m => m.ref.update({ name: newName }));
+                }
+                const file = document.getElementById('modalAvatar').files[0];
+                if(file) {
+                    const ref = storage.ref().child(`avatars/${currentUserId}.jpg`);
+                    await ref.put(file);
+                    currentUserAvatar = await ref.getDownloadURL();
+                    await db.ref('users/' + currentUserId).update({ avatarUrl: currentUserAvatar });
+                    document.getElementById('sidebarAvatar').src = currentUserAvatar;
+                    // Обновляем аватар во всех сообщениях
+                    const msgsSnap = await db.ref('group_messages').orderByChild('userId').equalTo(currentUserId).once('value');
+                    msgsSnap.forEach(m => m.ref.update({ avatar: currentUserAvatar }));
+                }
+                document.getElementById('profileModal').style.display = 'none';
+                alert('✅ Профиль обновлён!');
+                loadContacts();
+            } catch(e) { alert('Ошибка: ' + e.message); }
+            finally { saveBtn.innerText = '💾 Сохранить'; saveBtn.disabled = false; }
         };
     }
     
     function setupTheme() { if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark'); document.getElementById('themeToggle').onclick = () => { document.body.classList.toggle('dark'); localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light'); }; }
+    
+    // Админ функции
+    window.adminEditUser = async (userId, currentName, currentAvatarUrl) => {
+        const newName = prompt('Новый никнейм:', currentName);
+        if(newName && newName !== currentName) {
+            const check = await db.ref('users').orderByChild('name').equalTo(newName).once('value');
+            if(check.exists()) { alert('Ник занят'); return; }
+            await db.ref('users/' + userId).update({ name: newName });
+            const msgs = await db.ref('group_messages').orderByChild('userId').equalTo(userId).once('value');
+            msgs.forEach(m => m.ref.update({ name: newName }));
+            alert('Ник обновлён');
+        }
+        const newPass = prompt('Новый пароль (оставьте пустым, чтобы не менять):');
+        if(newPass && newPass.trim()) await db.ref('users/' + userId).update({ password: newPass.trim() });
+        
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.onchange = async (e) => {
+            if(e.target.files[0]) {
+                const ref = storage.ref().child(`avatars/${userId}.jpg`);
+                await ref.put(e.target.files[0]);
+                const url = await ref.getDownloadURL();
+                await db.ref('users/' + userId).update({ avatarUrl: url });
+                const msgs = await db.ref('group_messages').orderByChild('userId').equalTo(userId).once('value');
+                msgs.forEach(m => m.ref.update({ avatar: url }));
+                alert('Аватар обновлён');
+                loadAdminUsers();
+            }
+        };
+        fileInput.click();
+        loadAdminUsers();
+    };
     
     async function setupAdmin() {
         const isAdmin = currentUserName === 'DaniksGames';
@@ -555,13 +626,16 @@
         for(let id in users.val()) {
             const u = users.val()[id];
             container.innerHTML += `<div class="user-item"><div><strong>${escapeHtml(u.name)}</strong><br>🔑 ${u.password}<br>${u.blocked ? '🔒 Заблокирован' : '✅ Активен'}</div>
-                <div><button onclick="toggleBlock('${id}', ${u.blocked})">${u.blocked ? 'Разблок' : 'Блок'}</button>
-                <button onclick="deleteAccount('${id}')">🗑️</button></div></div>`;
+                <div>
+                    <button style="background:#8b5cf6;" onclick="adminEditUser('${id}', '${escapeHtml(u.name)}', '${u.avatarUrl || ''}')">✏️ Ред.</button>
+                    <button style="background:#f59e0b;" onclick="toggleBlock('${id}', ${u.blocked})">${u.blocked ? '🔓 Разблок' : '🔒 Блок'}</button>
+                    <button style="background:#ef4444;" onclick="deleteAccount('${id}')">🗑️</button>
+                </div></div>`;
         }
     }
     
     window.toggleBlock = async (id, blocked) => { await db.ref('users/' + id).update({ blocked: !blocked }); loadAdminUsers(); };
-    window.deleteAccount = async (id) => { if(confirm('Удалить?')) await db.ref('users/' + id).remove(); };
+    window.deleteAccount = async (id) => { if(confirm('Удалить аккаунт?')) { await db.ref('users/' + id).remove(); loadAdminUsers(); } };
     
     function escapeHtml(s) { if(!s) return ''; return s.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
     
