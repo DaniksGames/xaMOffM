@@ -123,7 +123,10 @@
             }
             
             /* Админ-панель на мобильных */
-            .admin-panel { padding: 16px !important; }
+            .admin-panel { 
+                padding: 16px !important; 
+                padding-top: 60px !important;
+            }
             .user-item { 
                 flex-direction: column !important; 
                 align-items: flex-start !important;
@@ -133,9 +136,11 @@
                 padding: 8px 14px !important;
             }
             .close-admin { 
+                position: fixed !important;
                 top: 10px !important; 
                 right: 10px !important; 
                 padding: 8px 16px !important;
+                z-index: 2600 !important;
             }
         }
         
@@ -237,6 +242,21 @@
             background: var(--message-area-bg);
             -webkit-overflow-scrolling: touch;
         }
+        
+        .messages-loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--other-text);
+            opacity: 0.7;
+        }
+        
+        .no-messages {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--other-text);
+            opacity: 0.5;
+        }
+        
         .message { 
             display: flex; 
             max-width: 80%; 
@@ -279,7 +299,6 @@
         .delete-btn, .reply-btn { 
             position: absolute; 
             top: -8px; 
-            background: #ef4444; 
             color: white; 
             border: none; 
             width: 28px; 
@@ -295,11 +314,36 @@
             justify-content: center;
             -webkit-tap-highlight-color: transparent;
         }
-        .delete-btn { right: -8px; }
+        .delete-btn { right: -8px; background: #ef4444; }
         .reply-btn { left: -8px; background: #8b5cf6; }
         .message:hover .delete-btn, .message:hover .reply-btn { opacity: 1; }
         @media (hover: none) {
             .delete-btn, .reply-btn { opacity: 1; width: 24px; height: 24px; top: -4px; }
+        }
+        
+        /* Админская кнопка удаления */
+        .admin-delete-btn {
+            position: absolute;
+            top: 20px;
+            right: -8px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 10px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .message:hover .admin-delete-btn { opacity: 1; }
+        @media (hover: none) {
+            .admin-delete-btn { opacity: 1; }
         }
         
         .reply-indicator { 
@@ -374,7 +418,7 @@
         .system-message { text-align: center; font-size: 0.7rem; background: #e9ecef; padding: 6px 12px; border-radius: 20px; margin: 4px auto; width: fit-content; }
         .highlight-message { animation: highlight 1s; }
         
-        .modal, .auth-overlay, .admin-panel { 
+        .modal, .auth-overlay { 
             position: fixed; 
             top: 0; 
             left: 0; 
@@ -386,6 +430,29 @@
             justify-content: center; 
             align-items: center; 
         }
+        
+        .admin-panel { 
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 2500;
+            display: none;
+            flex-direction: column;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .admin-panel-content {
+            padding: 20px;
+            padding-top: 70px;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
         .auth-card, .modal-content { 
             background: white; 
             border-radius: 28px; 
@@ -420,14 +487,6 @@
         .auth-card button:disabled, .modal-content button:disabled { opacity: 0.6; }
         .avatar-preview { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin: 10px auto; display: block; background: #4a6cf7; }
         
-        .admin-panel { 
-            flex-direction: column; 
-            padding: 20px; 
-            overflow-y: auto; 
-            z-index: 2500; 
-            background: rgba(0,0,0,0.95);
-            -webkit-overflow-scrolling: touch;
-        }
         .admin-panel h3 { color: white; margin-bottom: 20px; }
         .user-item { 
             background: #1e293b; 
@@ -451,16 +510,17 @@
             -webkit-tap-highlight-color: transparent;
         }
         .close-admin { 
-            position: sticky;
-            top: 10px;
-            float: right;
+            position: fixed;
+            top: 15px;
+            right: 15px;
             background: #ef4444; 
-            padding: 10px 20px; 
+            padding: 12px 24px; 
             border: none; 
             border-radius: 30px; 
             color: white; 
             cursor: pointer; 
-            z-index: 10;
+            z-index: 2600;
+            font-size: 1rem;
         }
         
         .menu-toggle { 
@@ -476,7 +536,6 @@
             -webkit-tap-highlight-color: transparent;
         }
         
-        /* Оверлей для мобильного меню */
         .sidebar-overlay {
             display: none;
             position: fixed;
@@ -490,6 +549,10 @@
         .sidebar-overlay.visible { display: block; }
         @media (min-width: 701px) {
             .sidebar-overlay { display: none !important; }
+        }
+        
+        #photoInput, #videoFileInput, #cameraCaptureInput, #modalAvatar {
+            display: block;
         }
     </style>
 </head>
@@ -527,7 +590,9 @@
                 <button class="icon-btn" id="logoutBtn" style="background:#ef4444;"><i class="fas fa-sign-out-alt"></i></button>
             </div>
         </div>
-        <div class="messages-area" id="messagesArea"></div>
+        <div class="messages-area" id="messagesArea">
+            <div class="messages-loading">Загрузка сообщений...</div>
+        </div>
         <div id="replyIndicator" class="reply-indicator" style="display: none;">
             <span style="flex:1;"><i class="fas fa-reply"></i> <span id="replyToName"></span>: "<span id="replyToText"></span>"</span>
             <button id="cancelReplyBtn" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:1.2rem;">✕</button>
@@ -568,12 +633,12 @@
 </div>
 
 <div id="adminPanel" class="admin-panel">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-        <h3 style="margin:0;">👑 Админ-панель</h3>
-        <button class="close-admin" id="closeAdminBtn" style="position:static;">✕ Закрыть</button>
+    <button class="close-admin" id="closeAdminBtn">✕ Закрыть</button>
+    <div class="admin-panel-content">
+        <h3>👑 Админ-панель</h3>
+        <button id="clearChatBtn" style="background:#f59e0b; padding:12px; border:none; border-radius:16px; margin:10px 0; cursor:pointer; width:100%; font-size:1rem;">🗑️ ОЧИСТИТЬ ОБЩИЙ ЧАТ</button>
+        <div id="usersList"></div>
     </div>
-    <button id="clearChatBtn" style="background:#f59e0b; padding:12px; border:none; border-radius:16px; margin:10px 0; cursor:pointer; width:100%; font-size:1rem;">🗑️ ОЧИСТИТЬ ОБЩИЙ ЧАТ</button>
-    <div id="usersList"></div>
 </div>
 
 <input type="file" id="photoInput" accept="image/*" style="display:none">
@@ -608,6 +673,8 @@
     let circleRecorder = null, circleChunks = [], isCircleRecording = false, circleStream = null;
     let processedMsgIds = new Set();
     let onlineStatusInterval = null;
+    let isAdmin = false;
+    let messagesLoaded = false;
     
     function playSound() { 
         try { 
@@ -706,6 +773,8 @@
                 return;
             }
             
+            isAdmin = currentUserName === 'DaniksGames';
+            
             await db.ref('users/' + currentUserId).update({ online: true, lastSeen: Date.now() });
             
             localStorage.setItem('userId', currentUserId);
@@ -781,6 +850,7 @@
         document.getElementById('replyIndicator').style.display = 'none';
         closeSidebar();
         renderContacts();
+        messagesLoaded = false;
         loadMessages();
     };
     
@@ -816,17 +886,40 @@
     
     function loadMessages() {
         const messagesArea = document.getElementById('messagesArea');
-        messagesArea.innerHTML = '<div style="text-align:center; padding:20px; color: var(--other-text);">Загрузка...</div>';
+        messagesArea.innerHTML = '<div class="messages-loading">Загрузка сообщений...</div>';
         const path = getChatPath();
         const msgsRef = db.ref(path);
         msgsRef.off();
         processedMsgIds.clear();
+        
+        let hasMessages = false;
+        
         msgsRef.orderByChild('time').limitToLast(100).on('child_added', (snap) => {
             if(!processedMsgIds.has(snap.key)) {
                 processedMsgIds.add(snap.key);
+                hasMessages = true;
+                
+                // Убираем загрузку при первом сообщении
+                if(!messagesLoaded) {
+                    messagesArea.innerHTML = '';
+                    messagesLoaded = true;
+                }
+                
                 renderMessage(snap.key, snap.val());
             }
+        }, (error) => {
+            console.error('Ошибка загрузки:', error);
+            messagesArea.innerHTML = '<div class="no-messages">Ошибка загрузки</div>';
         });
+        
+        // Проверяем наличие сообщений через 2 секунды
+        setTimeout(() => {
+            if(!hasMessages && !messagesLoaded) {
+                messagesArea.innerHTML = '<div class="no-messages">Нет сообщений. Напишите первое!</div>';
+                messagesLoaded = true;
+            }
+        }, 2000);
+        
         msgsRef.on('child_changed', (snap) => updateMessageInUI(snap.key, snap.val()));
         msgsRef.on('child_removed', (snap) => removeMessageFromUI(snap.key));
     }
@@ -857,10 +950,12 @@
             else if(msg.delivered) readStatus = '<span class="read-status">✓✓ Доставлено</span>';
             else readStatus = '<span class="read-status">✓ Отправлено</span>';
         }
+        
         const deleteBtn = isMe ? `<button class="delete-btn" onclick="deleteMessage('${msgId}')"><i class="fas fa-trash"></i></button>` : '';
+        const adminDeleteBtn = (isAdmin && !isMe) ? `<button class="admin-delete-btn" onclick="adminDeleteMessage('${msgId}')" title="Удалить как админ"><i class="fas fa-trash"></i></button>` : '';
         const replyBtn = `<button class="reply-btn" onclick="replyToMsg('${msgId}', '${escapeHtml(msg.name).replace(/'/g, "\\'")}', '${escapeHtml(msg.text || 'Медиа').replace(/'/g, "\\'")}')"><i class="fas fa-reply"></i></button>`;
         
-        div.innerHTML = `<div class="bubble">${deleteBtn}${replyBtn}<div class="message-header"><img class="msg-avatar" src="${avatar}" alt="${msg.name}"><span class="message-name">${escapeHtml(msg.name)}</span></div>${replyHtml}${mediaHtml}${msg.text && !msg.mediaType ? `<div>${escapeHtml(msg.text)}</div>` : ''}<span class="message-time">${new Date(msg.time).toLocaleTimeString()} ${readStatus}</span></div>`;
+        div.innerHTML = `<div class="bubble">${deleteBtn}${adminDeleteBtn}${replyBtn}<div class="message-header"><img class="msg-avatar" src="${avatar}" alt="${msg.name}"><span class="message-name">${escapeHtml(msg.name)}</span></div>${replyHtml}${mediaHtml}${msg.text && !msg.mediaType ? `<div>${escapeHtml(msg.text)}</div>` : ''}<span class="message-time">${new Date(msg.time).toLocaleTimeString()} ${readStatus}</span></div>`;
         document.getElementById('messagesArea').appendChild(div);
         document.getElementById('messagesArea').scrollTop = document.getElementById('messagesArea').scrollHeight;
         
@@ -879,9 +974,24 @@
         }
     }
     
-    function removeMessageFromUI(msgId) { const el = document.getElementById(`msg-${msgId}`); if(el) el.remove(); }
+    function removeMessageFromUI(msgId) { 
+        const el = document.getElementById(`msg-${msgId}`); 
+        if(el) el.remove(); 
+    }
     
-    window.deleteMessage = async (msgId) => { if(confirm('Удалить сообщение?')) await db.ref(`${getChatPath()}/${msgId}`).remove(); };
+    window.deleteMessage = async (msgId) => { 
+        if(confirm('Удалить сообщение?')) {
+            await db.ref(`${getChatPath()}/${msgId}`).remove(); 
+        }
+    };
+    
+    window.adminDeleteMessage = async (msgId) => {
+        if(!isAdmin) return;
+        if(confirm('Удалить это сообщение как администратор?')) {
+            await db.ref(`${getChatPath()}/${msgId}`).remove();
+        }
+    };
+    
     window.replyToMsg = (msgId, userName, text) => { 
         replyingTo = { messageId: msgId, userName, text }; 
         document.getElementById('replyIndicator').style.display = 'flex'; 
@@ -889,6 +999,7 @@
         document.getElementById('replyToText').innerText = text.length > 50 ? text.substring(0, 50) + '...' : text;
         document.getElementById('messageInput').focus();
     };
+    
     window.scrollToMessage = (msgId) => { 
         const el = document.getElementById(`msg-${msgId}`); 
         if(el) { 
@@ -1039,7 +1150,6 @@
                 const newName = document.getElementById('modalName').value.trim();
                 const file = document.getElementById('modalAvatar').files[0];
                 
-                // Проверка ника
                 if(newName && newName !== currentUserName) {
                     const check = await db.ref('users').orderByChild('name').equalTo(newName).once('value');
                     let taken = false;
@@ -1047,7 +1157,6 @@
                     if(taken) throw new Error('Ник занят');
                 }
                 
-                // Загрузка аватара если есть
                 let newAvatarUrl = currentUserAvatar;
                 if(file) {
                     const ref = storage.ref().child(`avatars/${currentUserId}_${Date.now()}.jpg`);
@@ -1055,7 +1164,6 @@
                     newAvatarUrl = await ref.getDownloadURL();
                 }
                 
-                // Обновление в базе данных
                 const updates = {};
                 if(newName && newName !== currentUserName) updates.name = newName;
                 if(newAvatarUrl !== currentUserAvatar) updates.avatarUrl = newAvatarUrl;
@@ -1063,24 +1171,22 @@
                 if(Object.keys(updates).length > 0) {
                     await db.ref('users/' + currentUserId).update(updates);
                     
-                    // Обновление локальных переменных
                     if(updates.name) {
                         currentUserName = updates.name;
                         localStorage.setItem('userName', updates.name);
                         document.getElementById('sidebarName').innerText = updates.name;
+                        isAdmin = currentUserName === 'DaniksGames';
                     }
                     if(updates.avatarUrl) {
                         currentUserAvatar = updates.avatarUrl;
                         document.getElementById('sidebarAvatar').src = updates.avatarUrl;
                     }
                     
-                    // Обновление сообщений
                     const groupMsgs = await db.ref('group_messages').orderByChild('userId').equalTo(currentUserId).once('value');
-                    const msgUpdates = {};
-                    groupMsgs.forEach(m => msgUpdates[m.key] = updates);
-                    
-                    for(let [key, val] of Object.entries(msgUpdates)) {
-                        await db.ref('group_messages/' + key).update(val);
+                    for(let m of Object.values(groupMsgs.val() || {})) {
+                        if(groupMsgs.key) {
+                            await groupMsgs.ref.update(updates);
+                        }
                     }
                 }
                 
@@ -1152,7 +1258,6 @@
     };
     
     async function setupAdmin() {
-        const isAdmin = currentUserName === 'DaniksGames';
         document.getElementById('adminPanelBtn').onclick = () => { 
             if(isAdmin) { 
                 loadAdminUsers(); 
@@ -1210,7 +1315,6 @@
         return String(s).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); 
     }
     
-    // Мобильное меню
     function closeSidebar() {
         document.getElementById('sidebar').classList.remove('open');
         document.getElementById('sidebarOverlay').classList.remove('visible');
@@ -1227,11 +1331,9 @@
         setupTheme();
         setupAdmin();
         
-        // Мобильное меню
         document.getElementById('menuToggle').onclick = openSidebar;
         document.getElementById('sidebarOverlay').onclick = closeSidebar;
         
-        // Авто-ресайз textarea
         const textarea = document.getElementById('messageInput');
         textarea.addEventListener('input', function() {
             this.style.height = 'auto';
@@ -1265,7 +1367,6 @@
             await db.ref('users/' + currentUserId).update({ online: true, lastSeen: Date.now() });
         }
         
-        // Запускаем обновление онлайн-статуса
         if(onlineStatusInterval) clearInterval(onlineStatusInterval);
         onlineStatusInterval = setInterval(updateOnlineStatus, 15000);
         setInterval(updateAllOnlineStatuses, 5000);
@@ -1273,7 +1374,6 @@
     
     document.getElementById('authBtn').onclick = auth;
     
-    // Автовход
     (async () => {
         const uid = localStorage.getItem('userId');
         if(uid) {
@@ -1283,6 +1383,7 @@
                 currentUserName = snap.val().name; 
                 currentUserAvatar = snap.val().avatarUrl;
                 isBlocked = snap.val().blocked || false;
+                isAdmin = currentUserName === 'DaniksGames';
                 
                 await db.ref('users/' + uid).update({ online: true, lastSeen: Date.now() });
                 
