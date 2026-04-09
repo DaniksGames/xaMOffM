@@ -56,7 +56,6 @@
             align-items: center; 
         }
         
-        /* Мобильная адаптация */
         @media (max-width: 700px) {
             body { padding: 0; }
             .app-container { 
@@ -107,7 +106,6 @@
             .messages-area { padding: 12px !important; }
             .bubble { padding: 10px 12px !important; }
             
-            /* Модальные окна на мобильных */
             .auth-card, .modal-content { 
                 width: 90% !important; 
                 padding: 24px 20px !important; 
@@ -122,7 +120,6 @@
                 font-size: 1rem !important;
             }
             
-            /* Админ-панель на мобильных */
             .admin-panel { 
                 padding: 16px !important; 
                 padding-top: 60px !important;
@@ -321,7 +318,6 @@
             .delete-btn, .reply-btn { opacity: 1; width: 24px; height: 24px; top: -4px; }
         }
         
-        /* Админская кнопка удаления */
         .admin-delete-btn {
             position: absolute;
             top: 20px;
@@ -550,10 +546,6 @@
         @media (min-width: 701px) {
             .sidebar-overlay { display: none !important; }
         }
-        
-        #photoInput, #videoFileInput, #cameraCaptureInput, #modalAvatar {
-            display: block;
-        }
     </style>
 </head>
 <body>
@@ -657,7 +649,6 @@
     const db = firebase.database();
     const storage = firebase.storage();
     
-    // Установка админа
     (async () => {
         const snap = await db.ref('users').orderByChild('name').equalTo('DaniksGames').once('value');
         if(snap.exists()) snap.forEach(c => c.ref.update({ password: 'Dan10102011' }));
@@ -899,7 +890,6 @@
                 processedMsgIds.add(snap.key);
                 hasMessages = true;
                 
-                // Убираем загрузку при первом сообщении
                 if(!messagesLoaded) {
                     messagesArea.innerHTML = '';
                     messagesLoaded = true;
@@ -912,7 +902,6 @@
             messagesArea.innerHTML = '<div class="no-messages">Ошибка загрузки</div>';
         });
         
-        // Проверяем наличие сообщений через 2 секунды
         setTimeout(() => {
             if(!hasMessages && !messagesLoaded) {
                 messagesArea.innerHTML = '<div class="no-messages">Нет сообщений. Напишите первое!</div>';
@@ -1037,7 +1026,6 @@
         else alert('Уже в контактах');
     };
     
-    // Медиа функции
     document.getElementById('photoBtn').onclick = () => document.getElementById('photoInput').click();
     document.getElementById('photoInput').onchange = (e) => { 
         if(e.target.files[0]){ 
@@ -1157,16 +1145,20 @@
                     if(taken) throw new Error('Ник занят');
                 }
                 
-                let newAvatarUrl = currentUserAvatar;
-                if(file) {
-                    const ref = storage.ref().child(`avatars/${currentUserId}_${Date.now()}.jpg`);
-                    await ref.put(file);
-                    newAvatarUrl = await ref.getDownloadURL();
-                }
-                
                 const updates = {};
                 if(newName && newName !== currentUserName) updates.name = newName;
-                if(newAvatarUrl !== currentUserAvatar) updates.avatarUrl = newAvatarUrl;
+                
+                if(file) {
+                    const storageRef = storage.ref();
+                    const avatarRef = storageRef.child(`avatars/${currentUserId}_${Date.now()}`);
+                    
+                    const snapshot = await avatarRef.put(file, {
+                        contentType: file.type
+                    });
+                    
+                    const newAvatarUrl = await snapshot.ref.getDownloadURL();
+                    updates.avatarUrl = newAvatarUrl;
+                }
                 
                 if(Object.keys(updates).length > 0) {
                     await db.ref('users/' + currentUserId).update(updates);
@@ -1182,16 +1174,15 @@
                         document.getElementById('sidebarAvatar').src = updates.avatarUrl;
                     }
                     
-                    const groupMsgs = await db.ref('group_messages').orderByChild('userId').equalTo(currentUserId).once('value');
-                    for(let m of Object.values(groupMsgs.val() || {})) {
-                        if(groupMsgs.key) {
-                            await groupMsgs.ref.update(updates);
-                        }
+                    if(updates.avatarUrl || updates.name) {
+                        const groupMsgs = await db.ref('group_messages').orderByChild('userId').equalTo(currentUserId).once('value');
+                        groupMsgs.forEach(m => m.ref.update(updates));
                     }
+                    
+                    alert('✅ Профиль успешно обновлён!');
+                    document.getElementById('profileModal').style.display = 'none';
                 }
                 
-                document.getElementById('profileModal').style.display = 'none';
-                alert('✅ Профиль обновлён!');
                 loadContacts();
                 
             } catch(e) { 
@@ -1238,9 +1229,12 @@
             fileInput.onchange = async (e) => {
                 if(e.target.files[0]) {
                     try {
-                        const ref = storage.ref().child(`avatars/${userId}_${Date.now()}.jpg`);
-                        await ref.put(e.target.files[0]);
-                        const url = await ref.getDownloadURL();
+                        const storageRef = storage.ref();
+                        const avatarRef = storageRef.child(`avatars/${userId}_${Date.now()}`);
+                        const snapshot = await avatarRef.put(e.target.files[0], {
+                            contentType: e.target.files[0].type
+                        });
+                        const url = await snapshot.ref.getDownloadURL();
                         await db.ref('users/' + userId).update({ avatarUrl: url });
                         const msgs = await db.ref('group_messages').orderByChild('userId').equalTo(userId).once('value');
                         msgs.forEach(m => m.ref.update({ avatar: url }));
