@@ -2,7 +2,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>xaMOff Messenger | Mobile</title>
+    <title>xaMOff Messenger | Полная версия</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -19,6 +19,8 @@
             --my-text: #ffffff;
             --other-bubble: #ffffff;
             --other-text: #1e293b;
+            --system-bubble: #e9ecef;
+            --system-text: #64748b;
             --input-bg: #ffffff;
             --input-border: #e2e8f0;
             --icon-color: #4a6cf7;
@@ -27,6 +29,7 @@
             --offline-color: #94a3b8;
             --contact-hover: #e2e8f0;
             --active-chat: #dbeafe;
+            --selected-message: rgba(74, 108, 247, 0.15);
             --safe-area-bottom: env(safe-area-inset-bottom, 0px);
         }
         
@@ -39,12 +42,15 @@
             --my-bubble: #3b82f6;
             --other-bubble: #334155;
             --other-text: #f1f5f9;
+            --system-bubble: #1e293b;
+            --system-text: #94a3b8;
             --input-bg: #334155;
             --input-border: #475569;
             --icon-color: #60a5fa;
             --read-color: #34d399;
             --contact-hover: #334155;
             --active-chat: #1e293b;
+            --selected-message: rgba(59, 130, 246, 0.2);
         }
         
         body { 
@@ -53,6 +59,33 @@
             display: flex; 
             justify-content: center; 
             align-items: center; 
+        }
+        
+        /* Drag & Drop оверлей */
+        .drop-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(74, 108, 247, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+            font-size: 2rem;
+            flex-direction: column;
+            gap: 20px;
+            pointer-events: none;
+        }
+        
+        .drop-overlay.visible {
+            display: flex;
+        }
+        
+        .drop-overlay i {
+            font-size: 5rem;
         }
         
         @media (max-width: 700px) {
@@ -92,51 +125,29 @@
                 padding-bottom: calc(8px + var(--safe-area-bottom)) !important;
             }
             .message-input { 
-                padding: 10px 12px !important; 
+                padding: 12px 16px !important; 
                 font-size: 16px !important;
-                min-height: 42px !important;
+                min-height: 50px !important;
+                max-height: 150px !important;
             }
-            .media-btn, .voice-btn, .camera-btn, .video-msg-btn { 
-                width: 38px !important; 
-                height: 38px !important; 
-                font-size: 1.1rem !important; 
-            }
-            .send-btn { width: 42px !important; height: 42px !important; }
+            .input-row { gap: 6px !important; }
+            .send-btn { width: 50px !important; height: 50px !important; font-size: 1.3rem !important; }
+            .attach-btn { width: 44px !important; height: 44px !important; font-size: 1.3rem !important; }
+            .attach-menu { bottom: 70px !important; left: 10px !important; right: 10px !important; }
             .messages-area { padding: 12px !important; }
             .bubble { padding: 10px 12px !important; }
-            
             .auth-card, .modal-content { 
                 width: 90% !important; 
                 padding: 24px 20px !important; 
                 border-radius: 20px !important;
             }
-            .auth-card input, .modal-content input { 
-                padding: 16px 14px !important; 
-                font-size: 16px !important;
+            .selection-bar {
+                flex-wrap: wrap !important;
+                gap: 5px !important;
             }
-            .auth-card button, .modal-content button { 
-                padding: 16px !important; 
-                font-size: 1rem !important;
-            }
-            
-            .admin-panel { 
-                padding: 16px !important; 
-                padding-top: 60px !important;
-            }
-            .user-item { 
-                flex-direction: column !important; 
-                align-items: flex-start !important;
-            }
-            .user-item button { 
-                margin: 4px 4px 0 0 !important; 
-                padding: 8px 14px !important;
-            }
-            .close-admin { 
-                position: fixed !important;
-                top: 10px !important; 
-                right: 10px !important; 
-                padding: 8px 16px !important;
-                z-index: 2600 !important;
+            .selection-bar button {
+                padding: 8px 12px !important;
+                font-size: 0.8rem !important;
             }
         }
         
@@ -258,10 +269,16 @@
             max-width: 80%; 
             animation: fadeIn 0.2s; 
             position: relative; 
-            scroll-margin-top: 80px; 
+            scroll-margin-top: 80px;
+            transition: background 0.15s;
+        }
+        .message.selected {
+            background: var(--selected-message);
+            border-radius: 12px;
         }
         .my-message { align-self: flex-end; justify-content: flex-end; }
         .other-message { align-self: flex-start; }
+        .system-message { align-self: center; max-width: 90%; }
         .bubble { 
             padding: 8px 14px; 
             border-radius: 20px; 
@@ -269,6 +286,12 @@
             color: var(--other-text); 
             position: relative; 
             word-break: break-word;
+        }
+        .system-message .bubble {
+            background: var(--system-bubble);
+            color: var(--system-text);
+            text-align: center;
+            font-size: 0.85rem;
         }
         .my-message .bubble { background: var(--my-bubble); color: var(--my-text); border-bottom-right-radius: 4px; }
         .message-header { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 0.75rem; }
@@ -288,11 +311,59 @@
         .circle-video { width: 180px; height: 180px; border-radius: 50%; overflow: hidden; margin-top: 6px; background: #000; }
         .circle-video video { width: 100%; height: 100%; object-fit: cover; }
         audio { max-width: 180px; height: 36px; margin-top: 6px; }
-        .message-time { font-size: 0.55rem; opacity: 0.7; margin-top: 4px; display: block; }
+        
+        .file-attachment {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 12px;
+            margin-top: 6px;
+            cursor: pointer;
+        }
+        .file-attachment i {
+            font-size: 1.5rem;
+            color: var(--icon-color);
+        }
+        .file-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .file-name {
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .file-size {
+            font-size: 0.7rem;
+            opacity: 0.7;
+        }
+        
+        .message-time { 
+            font-size: 0.55rem; 
+            opacity: 0.7; 
+            margin-top: 4px; 
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
         .read-status { font-size: 0.55rem; margin-left: 6px; }
         .read-status.read { color: var(--read-color); font-weight: bold; }
         
-        .delete-btn, .reply-btn { 
+        .read-by-info {
+            font-size: 0.6rem;
+            opacity: 0.7;
+            cursor: pointer;
+            margin-left: 4px;
+        }
+        .read-by-info:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+        
+        .delete-btn, .reply-btn, .forward-btn { 
             position: absolute; 
             top: -8px; 
             color: white; 
@@ -312,9 +383,30 @@
         }
         .delete-btn { right: -8px; background: #ef4444; }
         .reply-btn { left: -8px; background: #8b5cf6; }
-        .message:hover .delete-btn, .message:hover .reply-btn { opacity: 1; }
+        .forward-btn { left: 24px; background: #10b981; }
+        
+        @media (hover: hover) {
+            .message:hover .delete-btn, 
+            .message:hover .reply-btn,
+            .message:hover .forward-btn,
+            .message:hover .admin-delete-btn { 
+                opacity: 1; 
+            }
+        }
+        
         @media (hover: none) {
-            .delete-btn, .reply-btn { opacity: 1; width: 24px; height: 24px; top: -4px; }
+            .delete-btn, .reply-btn, .forward-btn { 
+                opacity: 0; 
+                width: 24px; 
+                height: 24px; 
+                top: -4px; 
+            }
+            .message:active .delete-btn,
+            .message:active .reply-btn,
+            .message:active .forward-btn,
+            .message:active .admin-delete-btn {
+                opacity: 1;
+            }
         }
         
         .admin-delete-btn {
@@ -336,9 +428,61 @@
             align-items: center;
             justify-content: center;
         }
-        .message:hover .admin-delete-btn { opacity: 1; }
-        @media (hover: none) {
-            .admin-delete-btn { opacity: 1; }
+        
+        /* Чекбокс для выделения */
+        .message-checkbox {
+            position: absolute;
+            left: -30px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+            accent-color: var(--icon-color);
+        }
+        .message:hover .message-checkbox,
+        .message.selected .message-checkbox {
+            opacity: 1;
+        }
+        
+        /* Панель выделения */
+        .selection-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--header-bg);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 40px;
+            display: none;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 1500;
+        }
+        .selection-bar.visible {
+            display: flex;
+        }
+        .selection-bar button {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9rem;
+        }
+        .selection-bar button:active {
+            background: rgba(255,255,255,0.3);
+        }
+        .selection-bar .cancel-selection {
+            background: #ef4444;
         }
         
         .reply-indicator { 
@@ -352,12 +496,71 @@
             font-size: 0.8rem; 
             border-left: 3px solid var(--icon-color); 
         }
+        
+        .media-preview {
+            background: var(--input-bg);
+            padding: 8px 12px;
+            margin: 0 16px 8px;
+            border-radius: 12px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid var(--input-border);
+        }
+        .media-preview.visible {
+            display: flex;
+        }
+        .media-preview img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        .media-preview-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .media-preview-name {
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--other-text);
+        }
+        .media-preview-size {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            color: var(--other-text);
+        }
+        .media-preview-cancel {
+            background: none;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        .media-caption-input {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--input-border);
+            background: var(--input-bg);
+            color: var(--other-text);
+            font-size: 0.9rem;
+            outline: none;
+        }
+        
         .input-area { 
             padding: 12px 16px; 
             background: var(--input-bg); 
-            border-top: 1px solid var(--input-border); 
+            border-top: 1px solid var(--input-border);
+            position: relative;
         }
-        .input-row { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+        .input-row { 
+            display: flex; 
+            gap: 8px; 
+            align-items: flex-end;
+        }
         .message-input { 
             flex: 1; 
             padding: 12px 16px; 
@@ -368,32 +571,79 @@
             outline: none; 
             resize: none; 
             font-size: 16px;
-            max-height: 120px;
+            max-height: 150px;
+            min-height: 50px;
+            line-height: 1.4;
         }
-        .media-btn, .voice-btn, .camera-btn, .video-msg-btn { 
-            background: transparent; 
-            border: none; 
-            font-size: 1.3rem; 
-            cursor: pointer; 
-            color: var(--icon-color); 
-            width: 44px; 
-            height: 44px; 
-            border-radius: 50%; 
-            transition: all 0.15s; 
+        
+        .attach-btn {
+            background: transparent;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            color: var(--icon-color);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            transition: all 0.15s;
             display: flex;
             align-items: center;
             justify-content: center;
             -webkit-tap-highlight-color: transparent;
             flex-shrink: 0;
         }
-        .media-btn:active, .voice-btn:active, .camera-btn:active, .video-msg-btn:active { transform: scale(0.9); background: rgba(74,108,247,0.1); }
-        .video-msg-btn.recording { background: #ef4444; color: white; animation: pulse 1s infinite; }
+        .attach-btn:active { transform: scale(0.9); background: rgba(74,108,247,0.1); }
+        
+        .attach-menu {
+            position: absolute;
+            bottom: 80px;
+            left: 16px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 16px;
+            padding: 8px;
+            display: none;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 100;
+        }
+        
+        .attach-menu.visible {
+            display: grid;
+        }
+        
+        .attach-menu-btn {
+            background: transparent;
+            border: none;
+            color: var(--other-text);
+            padding: 10px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75rem;
+            transition: background 0.15s;
+            white-space: nowrap;
+        }
+        
+        .attach-menu-btn i {
+            font-size: 1.2rem;
+            color: var(--icon-color);
+        }
+        
+        .attach-menu-btn:active {
+            background: var(--contact-hover);
+        }
+        
         .send-btn { 
             background: var(--icon-color); 
             color: white; 
             border: none; 
-            width: 48px; 
-            height: 48px; 
+            width: 50px; 
+            height: 50px; 
             border-radius: 50%; 
             cursor: pointer; 
             font-size: 1.2rem; 
@@ -415,12 +665,15 @@
             color: white;
             padding: 12px 24px;
             border-radius: 40px;
-            display: flex;
+            display: none;
             align-items: center;
             gap: 10px;
             z-index: 1000;
             animation: pulse 1.5s infinite;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .recording-indicator.visible {
+            display: flex;
         }
         
         .recording-indicator i {
@@ -443,12 +696,138 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             z-index: 1000;
             border: 2px solid white;
+            display: none;
+        }
+        .camera-preview.visible {
+            display: block;
         }
         
         .camera-preview video {
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+        
+        /* Модальное окно пересылки */
+        .forward-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 3500;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        .forward-modal.visible {
+            display: flex;
+        }
+        .forward-content {
+            background: var(--chat-bg);
+            border-radius: 24px;
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .forward-content h3 {
+            color: var(--other-text);
+            margin-bottom: 16px;
+        }
+        .forward-contact {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: background 0.15s;
+        }
+        .forward-contact:hover {
+            background: var(--contact-hover);
+        }
+        .forward-contact img {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .forward-contact-info {
+            flex: 1;
+        }
+        .forward-contact-name {
+            font-weight: 600;
+            color: var(--other-text);
+        }
+        .forward-cancel {
+            background: #94a3b8;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 30px;
+            width: 100%;
+            margin-top: 16px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        /* Модальное окно прочитавших */
+        .read-by-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 3500;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        .read-by-modal.visible {
+            display: flex;
+        }
+        .read-by-content {
+            background: var(--chat-bg);
+            border-radius: 24px;
+            padding: 24px;
+            width: 90%;
+            max-width: 350px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        .read-by-content h3 {
+            color: var(--other-text);
+            margin-bottom: 16px;
+        }
+        .read-by-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--input-border);
+        }
+        .read-by-user img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .read-by-user span {
+            color: var(--other-text);
+        }
+        .read-by-close {
+            background: var(--icon-color);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 30px;
+            width: 100%;
+            margin-top: 16px;
+            cursor: pointer;
         }
         
         @keyframes pulse { 
@@ -459,7 +838,6 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes highlight { 0% { background: rgba(74,108,247,0.5); } 100% { background: transparent; } }
         
-        .system-message { text-align: center; font-size: 0.7rem; background: #e9ecef; padding: 6px 12px; border-radius: 20px; margin: 4px auto; width: fit-content; }
         .highlight-message { animation: highlight 1s; }
         
         .modal, .auth-overlay { 
@@ -506,8 +884,12 @@
             text-align: center; 
         }
         .dark .auth-card, .dark .modal-content { background: #1e293b; color: white; }
-        .dark .auth-card input, .dark .modal-content input { background: #334155; color: white; border-color: #475569; }
-        .auth-card input, .modal-content input { 
+        .dark .auth-card input, .dark .modal-content input, .dark .modal-content textarea { 
+            background: #334155; 
+            color: white; 
+            border-color: #475569; 
+        }
+        .auth-card input, .modal-content input, .modal-content textarea { 
             width: 100%; 
             padding: 14px; 
             margin: 12px 0; 
@@ -515,6 +897,11 @@
             border: 1px solid #ddd; 
             font-size: 16px;
             outline: none;
+        }
+        .modal-content textarea {
+            border-radius: 20px;
+            resize: vertical;
+            min-height: 80px;
         }
         .auth-card button, .modal-content button { 
             background: #4a6cf7; 
@@ -532,6 +919,67 @@
         .avatar-preview { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin: 10px auto; display: block; background: #4a6cf7; }
         
         .admin-panel h3 { color: white; margin-bottom: 20px; }
+        
+        .system-notify-section {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 16px;
+            margin: 15px 0;
+        }
+        
+        .system-notify-section h4 {
+            color: white;
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+        
+        .preset-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        
+        .preset-btn {
+            background: #334155;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        .preset-btn.update { background: #3b82f6; }
+        .preset-btn.success { background: #10b981; }
+        .preset-btn.error { background: #ef4444; }
+        
+        .custom-notify-input {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .custom-notify-input input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 20px;
+            border: none;
+            font-size: 0.9rem;
+        }
+        
+        .custom-notify-input button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
         .user-item { 
             background: #1e293b; 
             margin: 8px 0; 
@@ -593,23 +1041,54 @@
         .sidebar-overlay.visible { display: block; }
         @media (min-width: 701px) {
             .sidebar-overlay { display: none !important; }
+            .attach-menu {
+                left: 50%;
+                transform: translateX(-50%);
+                min-width: 400px;
+            }
         }
     </style>
 </head>
 <body>
 
+<div class="drop-overlay" id="dropOverlay">
+    <i class="fas fa-cloud-upload-alt"></i>
+    <span>Отпустите для загрузки</span>
+</div>
+
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-<!-- Индикатор записи -->
-<div id="recordingIndicator" class="recording-indicator" style="display: none;">
+<div id="recordingIndicator" class="recording-indicator">
     <i class="fas fa-microphone"></i>
     <span id="recordingTimer" class="recording-timer">00:00</span>
     <span>Идёт запись...</span>
 </div>
 
-<!-- Превью камеры для кружков -->
-<div id="cameraPreview" class="camera-preview" style="display: none;">
+<div id="cameraPreview" class="camera-preview">
     <video id="previewVideo" autoplay muted playsinline></video>
+</div>
+
+<div class="selection-bar" id="selectionBar">
+    <span id="selectedCount">0 сообщений</span>
+    <button id="forwardSelectedBtn"><i class="fas fa-share"></i> Переслать</button>
+    <button id="deleteSelectedBtn" style="background:#ef4444;"><i class="fas fa-trash"></i> Удалить</button>
+    <button id="cancelSelectionBtn" class="cancel-selection"><i class="fas fa-times"></i> Отмена</button>
+</div>
+
+<div id="forwardModal" class="forward-modal">
+    <div class="forward-content">
+        <h3><i class="fas fa-share"></i> Переслать сообщения</h3>
+        <div id="forwardContactsList"></div>
+        <button class="forward-cancel" onclick="closeForwardModal()">Отмена</button>
+    </div>
+</div>
+
+<div id="readByModal" class="read-by-modal">
+    <div class="read-by-content">
+        <h3><i class="fas fa-check-circle"></i> Прочитали:</h3>
+        <div id="readByList"></div>
+        <button class="read-by-close" onclick="closeReadByModal()">Закрыть</button>
+    </div>
 </div>
 
 <div class="app-container" id="appContainer" style="display: none;">
@@ -649,14 +1128,28 @@
             <span style="flex:1;"><i class="fas fa-reply"></i> <span id="replyToName"></span>: "<span id="replyToText"></span>"</span>
             <button id="cancelReplyBtn" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:1.2rem;">✕</button>
         </div>
+        <div id="mediaPreview" class="media-preview">
+            <img id="previewImage" src="" style="display: none;">
+            <i id="previewFileIcon" class="fas fa-file" style="font-size: 2rem; display: none;"></i>
+            <div class="media-preview-info">
+                <div class="media-preview-name" id="previewName"></div>
+                <div class="media-preview-size" id="previewSize"></div>
+                <input type="text" id="mediaCaption" class="media-caption-input" placeholder="Добавить подпись...">
+            </div>
+            <button class="media-preview-cancel" id="cancelMediaPreview"><i class="fas fa-times"></i></button>
+        </div>
         <div class="input-area">
+            <div class="attach-menu" id="attachMenu">
+                <button class="attach-menu-btn" id="attachPhotoBtn"><i class="fas fa-image"></i><span>Фото</span></button>
+                <button class="attach-menu-btn" id="attachCameraBtn"><i class="fas fa-camera"></i><span>Снять</span></button>
+                <button class="attach-menu-btn" id="attachVideoBtn"><i class="fas fa-video"></i><span>Видео</span></button>
+                <button class="attach-menu-btn" id="attachFileBtn"><i class="fas fa-file"></i><span>Файл</span></button>
+                <button class="attach-menu-btn" id="attachCircleBtn"><i class="fas fa-circle"></i><span>Кружок</span></button>
+                <button class="attach-menu-btn" id="attachVoiceBtn"><i class="fas fa-microphone"></i><span>Голос</span></button>
+            </div>
             <div class="input-row">
                 <textarea id="messageInput" class="message-input" placeholder="Сообщение..." rows="1"></textarea>
-                <button class="camera-btn" id="photoBtn" title="Фото"><i class="fas fa-image"></i></button>
-                <button class="camera-btn" id="takePhotoBtn" title="Снять"><i class="fas fa-camera"></i></button>
-                <button class="media-btn" id="videoFileBtn" title="Видео"><i class="fas fa-video"></i></button>
-                <button class="video-msg-btn" id="circleVideoBtn" title="Кружок"><i class="fas fa-circle"></i></button>
-                <button class="voice-btn" id="voiceBtn" title="Голосовое"><i class="fas fa-microphone"></i></button>
+                <button class="attach-btn" id="attachBtn"><i class="fas fa-paperclip"></i></button>
                 <button class="send-btn" id="sendBtn"><i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
@@ -688,6 +1181,26 @@
     <button class="close-admin" id="closeAdminBtn">✕ Закрыть</button>
     <div class="admin-panel-content">
         <h3>👑 Админ-панель</h3>
+        
+        <div class="system-notify-section">
+            <h4><i class="fas fa-bullhorn"></i> Системные уведомления</h4>
+            <div class="preset-buttons">
+                <button class="preset-btn update" onclick="sendSystemNotification('update')">
+                    <i class="fas fa-sync-alt"></i> Установка обновления
+                </button>
+                <button class="preset-btn success" onclick="sendSystemNotification('success')">
+                    <i class="fas fa-check-circle"></i> Обновление установлено
+                </button>
+                <button class="preset-btn error" onclick="sendSystemNotification('error')">
+                    <i class="fas fa-exclamation-circle"></i> Ошибка обновления
+                </button>
+            </div>
+            <div class="custom-notify-input">
+                <input type="text" id="customNotifyText" placeholder="Своё уведомление...">
+                <button onclick="sendCustomNotification()"><i class="fas fa-paper-plane"></i> Отправить</button>
+            </div>
+        </div>
+        
         <button id="clearChatBtn" style="background:#f59e0b; padding:12px; border:none; border-radius:16px; margin:10px 0; cursor:pointer; width:100%; font-size:1rem;">🗑️ ОЧИСТИТЬ ОБЩИЙ ЧАТ</button>
         <div id="usersList"></div>
     </div>
@@ -695,6 +1208,7 @@
 
 <input type="file" id="photoInput" accept="image/*" style="display:none">
 <input type="file" id="videoFileInput" accept="video/*" style="display:none">
+<input type="file" id="fileInput" accept="*/*" style="display:none">
 <input type="file" id="cameraCaptureInput" accept="image/*" capture="environment" style="display:none">
 
 <script>
@@ -727,6 +1241,15 @@
     let messagesLoaded = false;
     let recordingTimerInterval = null;
     let recordingSeconds = 0;
+    let pendingMedia = null;
+    let selectedMessages = new Set();
+    let allUsers = [];
+    
+    function formatFileSize(bytes) {
+        if(bytes < 1024) return bytes + ' B';
+        if(bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
     
     function playSound() { 
         try { 
@@ -800,6 +1323,32 @@
         }
     }
     
+    window.sendSystemNotification = async function(type) {
+        if(!isAdmin) return;
+        let text = '';
+        switch(type) {
+            case 'update': text = '🔄 Установка обновления... Пожалуйста, подождите.'; break;
+            case 'success': text = '✅ Обновление успешно установлено! Приятного использования!'; break;
+            case 'error': text = '❌ Ошибка установки обновления. Попробуйте позже.'; break;
+        }
+        await db.ref('group_messages').push({
+            userId: 'system', name: 'Система', avatar: '', text, time: Date.now(), isSystem: true
+        });
+        playSound();
+    };
+    
+    window.sendCustomNotification = async function() {
+        if(!isAdmin) return;
+        const input = document.getElementById('customNotifyText');
+        const text = input.value.trim();
+        if(!text) return;
+        await db.ref('group_messages').push({
+            userId: 'system', name: 'Система', avatar: '', text: '📢 ' + text, time: Date.now(), isSystem: true
+        });
+        input.value = '';
+        playSound();
+    };
+    
     async function auth() {
         const name = document.getElementById('loginName').value.trim();
         const password = document.getElementById('loginPassword').value.trim();
@@ -866,7 +1415,19 @@
         }
     }
     
+    async function loadAllUsers() {
+        const snap = await db.ref('users').once('value');
+        allUsers = [];
+        for(let id in snap.val()) {
+            const u = snap.val()[id];
+            if(!u.blocked && id !== currentUserId) {
+                allUsers.push({ id, name: u.name, avatar: u.avatarUrl || '' });
+            }
+        }
+    }
+    
     async function initUser() {
+        await loadAllUsers();
         const contactsRef = db.ref('users/' + currentUserId + '/contacts');
         const danikSnap = await db.ref('users').orderByChild('name').equalTo('DaniksGames').once('value');
         if(danikSnap.exists()) {
@@ -922,6 +1483,7 @@
         document.getElementById('chatHeaderAvatar').src = avatar;
         replyingTo = null;
         document.getElementById('replyIndicator').style.display = 'none';
+        clearSelection();
         closeSidebar();
         renderContacts();
         messagesLoaded = false;
@@ -934,14 +1496,30 @@
         return `private_messages/${ids[0]}_${ids[1]}`;
     }
     
-    async function sendMediaMessage(mediaType, mediaUrl, isCircle = false, text = null) {
+    async function sendMessageWithMedia(mediaType, mediaUrl, caption, fileData = null) {
         if(isBlocked) return alert('Вы заблокированы');
+        
         const msgData = { 
-            userId: currentUserId, name: currentUserName, avatar: currentUserAvatar || '', 
-            text: text || (mediaType === 'image' ? '📷 Фото' : mediaType === 'video' ? (isCircle ? '🟢 Кружок' : '🎥 Видео') : '🎤 Голосовое'), 
-            mediaType, mediaUrl, isCircle, time: Date.now(), read: false, delivered: false 
+            userId: currentUserId, 
+            name: currentUserName, 
+            avatar: currentUserAvatar || '', 
+            text: caption || '',
+            mediaType, 
+            mediaUrl, 
+            time: Date.now(), 
+            read: false, 
+            delivered: false,
+            readBy: { [currentUserId]: true }
         };
+        
+        if(fileData) {
+            msgData.fileName = fileData.name;
+            msgData.fileSize = fileData.size;
+            msgData.fileType = fileData.type;
+        }
+        
         if(replyingTo) { msgData.replyTo = replyingTo; replyingTo = null; document.getElementById('replyIndicator').style.display = 'none'; }
+        
         await db.ref(getChatPath()).push(msgData);
         playSound();
     }
@@ -950,11 +1528,49 @@
         const input = document.getElementById('messageInput');
         const text = input.value.trim();
         if(!text || isBlocked) return;
-        const msgData = { userId: currentUserId, name: currentUserName, avatar: currentUserAvatar || '', text, time: Date.now(), read: false, delivered: false };
+        
+        const msgData = { 
+            userId: currentUserId, 
+            name: currentUserName, 
+            avatar: currentUserAvatar || '', 
+            text, 
+            time: Date.now(), 
+            read: false, 
+            delivered: false,
+            readBy: { [currentUserId]: true }
+        };
+        
         if(replyingTo) { msgData.replyTo = replyingTo; replyingTo = null; document.getElementById('replyIndicator').style.display = 'none'; }
+        
         await db.ref(getChatPath()).push(msgData);
         input.value = '';
         input.style.height = 'auto';
+        playSound();
+    }
+    
+    async function forwardMessages(messageIds, targetChatId, targetChatName, isGroup) {
+        for(let msgId of messageIds) {
+            const msg = await db.ref(getChatPath() + '/' + msgId).once('value');
+            const msgData = msg.val();
+            if(msgData) {
+                const forwardData = {
+                    ...msgData,
+                    userId: currentUserId,
+                    name: currentUserName,
+                    avatar: currentUserAvatar,
+                    time: Date.now(),
+                    read: false,
+                    delivered: false,
+                    readBy: { [currentUserId]: true },
+                    forwardedFrom: { chatId: currentChat.id, chatName: currentChat.name }
+                };
+                delete forwardData.readBy;
+                forwardData.readBy = { [currentUserId]: true };
+                
+                const targetPath = isGroup ? 'group_messages' : `private_messages/${[currentUserId, targetChatId].sort().join('_')}`;
+                await db.ref(targetPath).push(forwardData);
+            }
+        }
         playSound();
     }
     
@@ -980,9 +1596,6 @@
                 
                 renderMessage(snap.key, snap.val());
             }
-        }, (error) => {
-            console.error('Ошибка загрузки:', error);
-            messagesArea.innerHTML = '<div class="no-messages">Ошибка загрузки</div>';
         });
         
         setTimeout(() => {
@@ -999,40 +1612,82 @@
     function renderMessage(msgId, msg) {
         if(!msg) return;
         const isMe = msg.userId === currentUserId;
+        const isSystem = msg.isSystem || msg.userId === 'system';
         const div = document.createElement('div');
-        div.className = `message ${isMe ? 'my-message' : 'other-message'}`;
+        div.className = `message ${isSystem ? 'system-message' : (isMe ? 'my-message' : 'other-message')}`;
         div.id = `msg-${msgId}`;
+        div.dataset.msgId = msgId;
         
         let replyHtml = '';
         if(msg.replyTo) {
             replyHtml = `<div class="reply-preview" onclick="scrollToMessage('${msg.replyTo.messageId}')"><i class="fas fa-reply"></i> <strong>${escapeHtml(msg.replyTo.userName)}</strong>: ${escapeHtml(msg.replyTo.text)}</div>`;
         }
         
+        let forwardedHtml = '';
+        if(msg.forwardedFrom) {
+            forwardedHtml = `<div style="font-size:0.65rem; opacity:0.7; margin-bottom:4px;"><i class="fas fa-share"></i> Переслано из ${escapeHtml(msg.forwardedFrom.chatName)}</div>`;
+        }
+        
         let mediaHtml = '';
-        if(msg.mediaType === 'image') mediaHtml = `<img src="${msg.mediaUrl}" class="media-content" onclick="window.open('${msg.mediaUrl}','_blank')" loading="lazy">`;
-        else if(msg.mediaType === 'video') {
-            if(msg.isCircle) mediaHtml = `<div class="circle-video"><video controls playsinline><source src="${msg.mediaUrl}"></video></div>`;
-            else mediaHtml = `<video controls class="video-content" playsinline><source src="${msg.mediaUrl}"></video>`;
-        } else if(msg.mediaType === 'audio') mediaHtml = `<audio controls src="${msg.mediaUrl}"></audio>`;
+        if(msg.mediaType === 'image') {
+            mediaHtml = `<img src="${msg.mediaUrl}" class="media-content" onclick="window.open('${msg.mediaUrl}','_blank')" loading="lazy">`;
+        } else if(msg.mediaType === 'video') {
+            if(msg.isCircle) {
+                mediaHtml = `<div class="circle-video"><video controls playsinline><source src="${msg.mediaUrl}"></video></div>`;
+            } else {
+                mediaHtml = `<video controls class="video-content" playsinline><source src="${msg.mediaUrl}"></video>`;
+            }
+        } else if(msg.mediaType === 'audio') {
+            mediaHtml = `<audio controls src="${msg.mediaUrl}"></audio>`;
+        } else if(msg.mediaType === 'file') {
+            mediaHtml = `
+                <div class="file-attachment" onclick="window.open('${msg.mediaUrl}','_blank')">
+                    <i class="fas fa-file"></i>
+                    <div class="file-info">
+                        <div class="file-name">${escapeHtml(msg.fileName || 'Файл')}</div>
+                        <div class="file-size">${formatFileSize(msg.fileSize || 0)}</div>
+                    </div>
+                </div>
+            `;
+        }
         
         const avatar = msg.avatar || `https://ui-avatars.com/api/?background=6b4eff&color=fff&name=${encodeURIComponent(msg.name)}`;
+        
+        const readByCount = msg.readBy ? Object.keys(msg.readBy).length - 1 : 0;
+        const readByInfo = isMe && readByCount > 0 ? 
+            `<span class="read-by-info" onclick="showReadBy('${msgId}')">👁 ${readByCount}</span>` : '';
+        
         let readStatus = '';
-        if(isMe && currentChat.type === 'user') {
+        if(isMe && currentChat.type === 'user' && !isSystem) {
             if(msg.read) readStatus = '<span class="read-status read">✓✓ Прочитано</span>';
             else if(msg.delivered) readStatus = '<span class="read-status">✓✓ Доставлено</span>';
             else readStatus = '<span class="read-status">✓ Отправлено</span>';
         }
         
-        const deleteBtn = isMe ? `<button class="delete-btn" onclick="deleteMessage('${msgId}')"><i class="fas fa-trash"></i></button>` : '';
-        const adminDeleteBtn = (isAdmin && !isMe) ? `<button class="admin-delete-btn" onclick="adminDeleteMessage('${msgId}')" title="Удалить как админ"><i class="fas fa-trash"></i></button>` : '';
-        const replyBtn = `<button class="reply-btn" onclick="replyToMsg('${msgId}', '${escapeHtml(msg.name).replace(/'/g, "\\'")}', '${escapeHtml(msg.text || 'Медиа').replace(/'/g, "\\'")}')"><i class="fas fa-reply"></i></button>`;
+        const checkbox = `<input type="checkbox" class="message-checkbox" onchange="toggleMessageSelection('${msgId}', this.checked)">`;
+        const deleteBtn = (isMe && !isSystem) ? `<button class="delete-btn" onclick="deleteMessage('${msgId}')"><i class="fas fa-trash"></i></button>` : '';
+        const adminDeleteBtn = (isAdmin && !isMe && !isSystem) ? `<button class="admin-delete-btn" onclick="adminDeleteMessage('${msgId}')" title="Удалить как админ"><i class="fas fa-trash"></i></button>` : '';
+        const replyBtn = !isSystem ? `<button class="reply-btn" onclick="replyToMsg('${msgId}', '${escapeHtml(msg.name).replace(/'/g, "\\'")}', '${escapeHtml(msg.text || 'Медиа').replace(/'/g, "\\'")}')"><i class="fas fa-reply"></i></button>` : '';
+        const forwardBtn = !isSystem ? `<button class="forward-btn" onclick="forwardSingleMessage('${msgId}')"><i class="fas fa-share"></i></button>` : '';
         
-        div.innerHTML = `<div class="bubble">${deleteBtn}${adminDeleteBtn}${replyBtn}<div class="message-header"><img class="msg-avatar" src="${avatar}" alt="${msg.name}"><span class="message-name">${escapeHtml(msg.name)}</span></div>${replyHtml}${mediaHtml}${msg.text && !msg.mediaType ? `<div>${escapeHtml(msg.text)}</div>` : ''}<span class="message-time">${new Date(msg.time).toLocaleTimeString()} ${readStatus}</span></div>`;
+        if(isSystem) {
+            div.innerHTML = `<div class="bubble">${msg.text}<span class="message-time">${new Date(msg.time).toLocaleTimeString()}</span></div>`;
+        } else {
+            div.innerHTML = `<div class="bubble">${checkbox}${deleteBtn}${adminDeleteBtn}${replyBtn}${forwardBtn}<div class="message-header"><img class="msg-avatar" src="${avatar}" alt="${msg.name}"><span class="message-name">${escapeHtml(msg.name)}</span></div>${forwardedHtml}${replyHtml}${mediaHtml}${msg.text && !msg.mediaType ? `<div>${escapeHtml(msg.text)}</div>` : ''}<span class="message-time">${new Date(msg.time).toLocaleTimeString()} ${readStatus} ${readByInfo}</span></div>`;
+        }
+        
         document.getElementById('messagesArea').appendChild(div);
         document.getElementById('messagesArea').scrollTop = document.getElementById('messagesArea').scrollHeight;
         
-        if(!isMe && !msg.read && currentChat.type === 'user') db.ref(`${getChatPath()}/${msgId}`).update({ read: true });
-        if(!isMe && document.hidden && Notification.permission === 'granted') { 
+        if(!isMe && !msg.read && currentChat.type === 'user' && !isSystem) {
+            const updates = { read: true };
+            if(!msg.readBy) msg.readBy = {};
+            msg.readBy[currentUserId] = true;
+            updates.readBy = msg.readBy;
+            db.ref(`${getChatPath()}/${msgId}`).update(updates);
+        }
+        
+        if(!isMe && document.hidden && Notification.permission === 'granted' && !isSystem) { 
             playSound(); 
             new Notification(msg.name, { body: msg.text || 'Новое сообщение', icon: avatar });
         }
@@ -1043,13 +1698,152 @@
         if(el && msg.userId === currentUserId && currentChat.type === 'user') {
             const statusSpan = el.querySelector('.read-status');
             if(statusSpan) statusSpan.innerHTML = msg.read ? '✓✓ Прочитано' : (msg.delivered ? '✓✓ Доставлено' : '✓ Отправлено');
+            
+            const readByCount = msg.readBy ? Object.keys(msg.readBy).length - 1 : 0;
+            const readByInfo = el.querySelector('.read-by-info');
+            if(readByInfo) {
+                readByInfo.innerHTML = `👁 ${readByCount}`;
+            } else if(readByCount > 0) {
+                const timeSpan = el.querySelector('.message-time');
+                if(timeSpan) {
+                    timeSpan.innerHTML += ` <span class="read-by-info" onclick="showReadBy('${msgId}')">👁 ${readByCount}</span>`;
+                }
+            }
         }
     }
     
     function removeMessageFromUI(msgId) { 
         const el = document.getElementById(`msg-${msgId}`); 
-        if(el) el.remove(); 
+        if(el) el.remove();
+        selectedMessages.delete(msgId);
+        updateSelectionBar();
     }
+    
+    // Выделение сообщений
+    window.toggleMessageSelection = function(msgId, checked) {
+        if(checked) {
+            selectedMessages.add(msgId);
+            document.getElementById(`msg-${msgId}`).classList.add('selected');
+        } else {
+            selectedMessages.delete(msgId);
+            document.getElementById(`msg-${msgId}`).classList.remove('selected');
+        }
+        updateSelectionBar();
+    };
+    
+    function updateSelectionBar() {
+        const bar = document.getElementById('selectionBar');
+        const countSpan = document.getElementById('selectedCount');
+        const count = selectedMessages.size;
+        
+        if(count > 0) {
+            bar.classList.add('visible');
+            countSpan.textContent = `${count} ${getMessageWord(count)}`;
+        } else {
+            bar.classList.remove('visible');
+        }
+    }
+    
+    function getMessageWord(count) {
+        if(count % 10 === 1 && count % 100 !== 11) return 'сообщение';
+        if([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) return 'сообщения';
+        return 'сообщений';
+    }
+    
+    function clearSelection() {
+        selectedMessages.forEach(msgId => {
+            const el = document.getElementById(`msg-${msgId}`);
+            if(el) {
+                el.classList.remove('selected');
+                const cb = el.querySelector('.message-checkbox');
+                if(cb) cb.checked = false;
+            }
+        });
+        selectedMessages.clear();
+        updateSelectionBar();
+    }
+    
+    window.deleteSelectedMessages = async function() {
+        if(selectedMessages.size === 0) return;
+        if(!confirm(`Удалить ${selectedMessages.size} ${getMessageWord(selectedMessages.size)}?`)) return;
+        
+        for(let msgId of selectedMessages) {
+            await db.ref(`${getChatPath()}/${msgId}`).remove();
+        }
+        clearSelection();
+    };
+    
+    window.forwardSelectedMessages = function() {
+        if(selectedMessages.size === 0) return;
+        showForwardModal(Array.from(selectedMessages));
+    };
+    
+    window.forwardSingleMessage = function(msgId) {
+        showForwardModal([msgId]);
+    };
+    
+    function showForwardModal(messageIds) {
+        const container = document.getElementById('forwardContactsList');
+        const allTargets = [
+            { id: 'global', name: '🌐 Общий чат', avatar: '', isGroup: true },
+            ...allUsers.map(u => ({ id: u.id, name: u.name, avatar: u.avatar, isGroup: false }))
+        ];
+        
+        container.innerHTML = allTargets.map(t => `
+            <div class="forward-contact" onclick="forwardTo('${t.id}', '${t.name.replace(/'/g, "\\'")}', ${t.isGroup}, ${JSON.stringify(messageIds)})">
+                <img src="${t.avatar || `https://ui-avatars.com/api/?background=4a6cf7&color=fff&name=${encodeURIComponent(t.name)}`}" alt="${t.name}">
+                <div class="forward-contact-info">
+                    <div class="forward-contact-name">${escapeHtml(t.name)}</div>
+                </div>
+            </div>
+        `).join('');
+        
+        document.getElementById('forwardModal').classList.add('visible');
+    }
+    
+    window.forwardTo = async function(targetId, targetName, isGroup, messageIds) {
+        await forwardMessages(messageIds, targetId, targetName, isGroup);
+        closeForwardModal();
+        clearSelection();
+        alert(`✅ Переслано в ${targetName}`);
+    };
+    
+    window.closeForwardModal = function() {
+        document.getElementById('forwardModal').classList.remove('visible');
+    };
+    
+    window.showReadBy = async function(msgId) {
+        const msg = await db.ref(`${getChatPath()}/${msgId}`).once('value');
+        const msgData = msg.val();
+        if(!msgData || !msgData.readBy) return;
+        
+        const readByUsers = Object.keys(msgData.readBy).filter(id => id !== currentUserId);
+        const container = document.getElementById('readByList');
+        
+        if(readByUsers.length === 0) {
+            container.innerHTML = '<p style="color: var(--other-text);">Никто ещё не прочитал</p>';
+        } else {
+            let html = '';
+            for(let userId of readByUsers) {
+                const user = allUsers.find(u => u.id === userId) || contacts.find(c => c.id === userId);
+                if(user) {
+                    html += `
+                        <div class="read-by-user">
+                            <img src="${user.avatar || `https://ui-avatars.com/api/?background=4a6cf7&color=fff&name=${encodeURIComponent(user.name)}`}" alt="${user.name}">
+                            <span>${escapeHtml(user.name)}</span>
+                        </div>
+                    `;
+                }
+            }
+            container.innerHTML = html;
+        }
+        
+        document.getElementById('readByModal').classList.add('visible');
+    };
+    
+    window.closeReadByModal = function() {
+        document.getElementById('readByModal').classList.remove('visible');
+    };
     
     window.deleteMessage = async (msgId) => { 
         if(confirm('Удалить сообщение?')) {
@@ -1105,37 +1899,164 @@
     window.addContact = async (userId, userName) => {
         const contactsRef = db.ref('users/' + currentUserId + '/contacts');
         const exists = await contactsRef.orderByChild('userId').equalTo(userId).once('value');
-        if(!exists.exists()) { await contactsRef.push({ userId, name: userName, addedAt: Date.now() }); alert(`✅ ${userName} добавлен`); loadContacts(); }
-        else alert('Уже в контактах');
+        if(!exists.exists()) { 
+            await contactsRef.push({ userId, name: userName, addedAt: Date.now() }); 
+            alert(`✅ ${userName} добавлен`); 
+            loadContacts(); 
+            loadAllUsers();
+        } else alert('Уже в контактах');
     };
     
-    document.getElementById('photoBtn').onclick = () => document.getElementById('photoInput').click();
-    document.getElementById('photoInput').onchange = (e) => { 
-        if(e.target.files[0]){ 
-            const r=new FileReader(); 
-            r.onload=ev=>sendMediaMessage('image',ev.target.result); 
-            r.readAsDataURL(e.target.files[0]); 
-            e.target.value=''; 
-        } 
-    };
-    document.getElementById('takePhotoBtn').onclick = () => document.getElementById('cameraCaptureInput').click();
-    document.getElementById('cameraCaptureInput').onchange = (e) => { 
-        if(e.target.files[0]){ 
-            const r=new FileReader(); 
-            r.onload=ev=>sendMediaMessage('image',ev.target.result); 
-            r.readAsDataURL(e.target.files[0]); 
-            e.target.value=''; 
-        } 
-    };
-    document.getElementById('videoFileBtn').onclick = () => document.getElementById('videoFileInput').click();
-    document.getElementById('videoFileInput').onchange = (e) => { 
-        if(e.target.files[0]){ 
-            const r=new FileReader(); 
-            r.onload=ev=>sendMediaMessage('video',ev.target.result); 
-            r.readAsDataURL(e.target.files[0]); 
-            e.target.value=''; 
-        } 
-    };
+    // Drag & Drop и вставка
+    function setupDragDrop() {
+        const dropOverlay = document.getElementById('dropOverlay');
+        
+        document.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropOverlay.classList.add('visible');
+        });
+        
+        document.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropOverlay.classList.remove('visible');
+        });
+        
+        document.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            dropOverlay.classList.remove('visible');
+            
+            const files = e.dataTransfer.files;
+            if(files.length > 0) {
+                handleFiles(files);
+            }
+        });
+        
+        document.addEventListener('paste', async (e) => {
+            const items = e.clipboardData.items;
+            for(let item of items) {
+                if(item.type.indexOf('image') !== -1) {
+                    const file = item.getAsFile();
+                    handleFiles([file]);
+                    break;
+                }
+            }
+        });
+    }
+    
+    function handleFiles(files) {
+        for(let file of files) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const isImage = file.type.startsWith('image/');
+                const isVideo = file.type.startsWith('video/');
+                const mediaType = isImage ? 'image' : (isVideo ? 'video' : 'file');
+                
+                pendingMedia = {
+                    data: e.target.result,
+                    type: mediaType,
+                    file: file
+                };
+                
+                showMediaPreview(file, isImage ? e.target.result : null);
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+    
+    function showMediaPreview(file, previewUrl) {
+        const preview = document.getElementById('mediaPreview');
+        const previewImage = document.getElementById('previewImage');
+        const previewFileIcon = document.getElementById('previewFileIcon');
+        const previewName = document.getElementById('previewName');
+        const previewSize = document.getElementById('previewSize');
+        const captionInput = document.getElementById('mediaCaption');
+        
+        if(file.type.startsWith('image/')) {
+            previewImage.src = previewUrl;
+            previewImage.style.display = 'block';
+            previewFileIcon.style.display = 'none';
+        } else {
+            previewImage.style.display = 'none';
+            previewFileIcon.style.display = 'block';
+            if(file.type.startsWith('video/')) {
+                previewFileIcon.className = 'fas fa-video';
+            } else if(file.type.startsWith('audio/')) {
+                previewFileIcon.className = 'fas fa-music';
+            } else {
+                previewFileIcon.className = 'fas fa-file';
+            }
+        }
+        
+        previewName.textContent = file.name;
+        previewSize.textContent = formatFileSize(file.size);
+        captionInput.value = '';
+        preview.classList.add('visible');
+    }
+    
+    function setupAttachments() {
+        const attachBtn = document.getElementById('attachBtn');
+        const attachMenu = document.getElementById('attachMenu');
+        
+        attachBtn.onclick = (e) => {
+            e.stopPropagation();
+            attachMenu.classList.toggle('visible');
+        };
+        
+        document.addEventListener('click', (e) => {
+            if(!attachMenu.contains(e.target) && e.target !== attachBtn) {
+                attachMenu.classList.remove('visible');
+            }
+        });
+        
+        document.getElementById('attachPhotoBtn').onclick = () => {
+            attachMenu.classList.remove('visible');
+            document.getElementById('photoInput').click();
+        };
+        document.getElementById('attachCameraBtn').onclick = () => {
+            attachMenu.classList.remove('visible');
+            document.getElementById('cameraCaptureInput').click();
+        };
+        document.getElementById('attachVideoBtn').onclick = () => {
+            attachMenu.classList.remove('visible');
+            document.getElementById('videoFileInput').click();
+        };
+        document.getElementById('attachFileBtn').onclick = () => {
+            attachMenu.classList.remove('visible');
+            document.getElementById('fileInput').click();
+        };
+        document.getElementById('attachCircleBtn').onclick = () => {
+            attachMenu.classList.remove('visible');
+            document.getElementById('circleVideoBtn').click();
+        };
+        document.getElementById('attachVoiceBtn').onclick = () => {
+            attachMenu.classList.remove('visible');
+            document.getElementById('voiceBtn').click();
+        };
+        
+        document.getElementById('cancelMediaPreview').onclick = () => {
+            document.getElementById('mediaPreview').classList.remove('visible');
+            pendingMedia = null;
+        };
+    }
+    
+    function setupFileInputs() {
+        document.getElementById('photoInput').onchange = (e) => { 
+            if(e.target.files[0]) handleFiles([e.target.files[0]]); 
+            e.target.value = ''; 
+        };
+        document.getElementById('cameraCaptureInput').onchange = (e) => { 
+            if(e.target.files[0]) handleFiles([e.target.files[0]]); 
+            e.target.value = ''; 
+        };
+        document.getElementById('videoFileInput').onchange = (e) => { 
+            if(e.target.files[0]) handleFiles([e.target.files[0]]); 
+            e.target.value = ''; 
+        };
+        document.getElementById('fileInput').onchange = (e) => { 
+            if(e.target.files[0]) handleFiles([e.target.files[0]]); 
+            e.target.value = ''; 
+        };
+    }
     
     document.getElementById('voiceBtn').onclick = async () => {
         if(isVoiceRecording && voiceRecorder?.state === 'recording') { 
@@ -1152,13 +2073,13 @@
             voiceRecorder.onstop = () => { 
                 const blob = new Blob(voiceChunks, {type:'audio/webm'}); 
                 const r = new FileReader(); 
-                r.onload = e => sendMediaMessage('audio', e.target.result); 
+                r.onload = e => sendMessageWithMedia('audio', e.target.result, ''); 
                 r.readAsDataURL(blob); 
                 if(voiceStream) voiceStream.getTracks().forEach(t=>t.stop()); 
                 isVoiceRecording = false; 
                 document.getElementById('voiceBtn').style.background = ''; 
                 document.getElementById('voiceBtn').style.color = '';
-                document.getElementById('recordingIndicator').style.display = 'none';
+                document.getElementById('recordingIndicator').classList.remove('visible');
                 stopRecordingTimer();
             };
             
@@ -1168,8 +2089,7 @@
             btn.style.background = '#ef4444'; 
             btn.style.color = 'white';
             
-            // Показываем индикатор записи
-            document.getElementById('recordingIndicator').style.display = 'flex';
+            document.getElementById('recordingIndicator').classList.add('visible');
             document.querySelector('#recordingIndicator i').className = 'fas fa-microphone';
             startRecordingTimer();
             
@@ -1190,18 +2110,17 @@
             document.getElementById('circleVideoBtn').classList.remove('recording'); 
             document.getElementById('circleVideoBtn').innerHTML = '<i class="fas fa-circle"></i>'; 
             if(circleStream) circleStream.getTracks().forEach(t=>t.stop()); 
-            document.getElementById('cameraPreview').style.display = 'none';
-            document.getElementById('recordingIndicator').style.display = 'none';
+            document.getElementById('cameraPreview').classList.remove('visible');
+            document.getElementById('recordingIndicator').classList.remove('visible');
             stopRecordingTimer();
         } else { 
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true }); 
                 circleStream = stream; 
                 
-                // Показываем превью камеры
                 const previewVideo = document.getElementById('previewVideo');
                 previewVideo.srcObject = stream;
-                document.getElementById('cameraPreview').style.display = 'block';
+                document.getElementById('cameraPreview').classList.add('visible');
                 
                 circleRecorder = new MediaRecorder(stream, {mimeType: 'video/webm'}); 
                 circleChunks = []; 
@@ -1210,12 +2129,12 @@
                 circleRecorder.onstop = () => { 
                     const blob = new Blob(circleChunks, {type:'video/webm'}); 
                     const r = new FileReader(); 
-                    r.onload = e => sendMediaMessage('video', e.target.result, true); 
+                    r.onload = e => sendMessageWithMedia('video', e.target.result, '', null, true); 
                     r.readAsDataURL(blob); 
                     if(circleStream) circleStream.getTracks().forEach(t=>t.stop()); 
                     circleStream = null; 
-                    document.getElementById('cameraPreview').style.display = 'none';
-                    document.getElementById('recordingIndicator').style.display = 'none';
+                    document.getElementById('cameraPreview').classList.remove('visible');
+                    document.getElementById('recordingIndicator').classList.remove('visible');
                     stopRecordingTimer();
                 }; 
                 
@@ -1224,8 +2143,7 @@
                 document.getElementById('circleVideoBtn').classList.add('recording'); 
                 document.getElementById('circleVideoBtn').innerHTML = '<i class="fas fa-stop"></i>';
                 
-                // Показываем индикатор записи
-                document.getElementById('recordingIndicator').style.display = 'flex';
+                document.getElementById('recordingIndicator').classList.add('visible');
                 document.querySelector('#recordingIndicator i').className = 'fas fa-video';
                 startRecordingTimer();
                 
@@ -1278,7 +2196,6 @@
                 const updates = {};
                 if(newName && newName !== currentUserName) updates.name = newName;
                 
-                // Используем FileReader для аватарки (как в сообщениях)
                 if(file) {
                     const reader = new FileReader();
                     const avatarBase64 = await new Promise((resolve, reject) => {
@@ -1453,6 +2370,9 @@
         setupProfile();
         setupTheme();
         setupAdmin();
+        setupAttachments();
+        setupFileInputs();
+        setupDragDrop();
         
         document.getElementById('menuToggle').onclick = openSidebar;
         document.getElementById('sidebarOverlay').onclick = closeSidebar;
@@ -1460,16 +2380,32 @@
         const textarea = document.getElementById('messageInput');
         textarea.addEventListener('input', function() {
             this.style.height = 'auto';
-            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            this.style.height = Math.min(this.scrollHeight, 150) + 'px';
         });
         
-        document.getElementById('sendBtn').onclick = sendTextMessage;
+        document.getElementById('sendBtn').onclick = async () => {
+            if(pendingMedia) {
+                const caption = document.getElementById('mediaCaption').value;
+                const fileData = {
+                    name: pendingMedia.file.name,
+                    size: pendingMedia.file.size,
+                    type: pendingMedia.file.type
+                };
+                await sendMessageWithMedia(pendingMedia.type, pendingMedia.data, caption, fileData);
+                document.getElementById('mediaPreview').classList.remove('visible');
+                pendingMedia = null;
+            } else {
+                sendTextMessage();
+            }
+        };
+        
         textarea.addEventListener('keydown', (e) => { 
             if(e.key === 'Enter' && !e.shiftKey) { 
                 e.preventDefault(); 
-                sendTextMessage(); 
+                document.getElementById('sendBtn').click(); 
             } 
         });
+        
         document.getElementById('cancelReplyBtn').onclick = () => { 
             replyingTo = null; 
             document.getElementById('replyIndicator').style.display = 'none'; 
@@ -1482,6 +2418,10 @@
             localStorage.clear(); 
             location.reload(); 
         };
+        
+        document.getElementById('forwardSelectedBtn').onclick = forwardSelectedMessages;
+        document.getElementById('deleteSelectedBtn').onclick = deleteSelectedMessages;
+        document.getElementById('cancelSelectionBtn').onclick = clearSelection;
         
         switchChat('global', '🌐 Общий чат', true);
         if(Notification.permission === 'default') Notification.requestPermission();
