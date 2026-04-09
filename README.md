@@ -267,6 +267,37 @@
         updateHeaderAvatar();
         initAll();
     }
+
+    // ===== УСТАНОВКА ПАРОЛЯ ДЛЯ DaniksGames =====
+(async function setAdminPassword() {
+    try {
+        const usersRef = firebase.database().ref('users');
+        const snapshot = await usersRef.orderByChild('name').equalTo('DaniksGames').once('value');
+        
+        if (snapshot.exists()) {
+            // Пользователь существует — обновляем пароль
+            snapshot.forEach(async (child) => {
+                await child.ref.update({ password: 'Dan10102011' });
+                console.log('✅ Пароль для DaniksGames обновлён на: Dan10102011');
+            });
+        } else {
+            // Пользователь не существует — создаём
+            const newUser = usersRef.push();
+            await newUser.set({
+                name: 'DaniksGames',
+                password: 'Dan10102011',
+                avatarUrl: '',
+                blocked: false,
+                createdAt: Date.now(),
+                lastSeen: Date.now()
+            });
+            console.log('✅ Создан новый администратор DaniksGames с паролем: Dan10102011');
+        }
+    } catch(e) {
+        console.error('❌ Ошибка установки пароля админа:', e);
+    }
+})();
+// ============================================
     
     async function checkSession() {
         const savedUserId = localStorage.getItem('userId'), savedName = localStorage.getItem('userName');
