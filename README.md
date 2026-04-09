@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -19,6 +20,8 @@
             --my-text: #ffffff;
             --other-bubble: #ffffff;
             --other-text: #1e293b;
+            --system-bubble: #e9ecef;
+            --system-text: #64748b;
             --input-bg: #ffffff;
             --input-border: #e2e8f0;
             --icon-color: #4a6cf7;
@@ -39,6 +42,8 @@
             --my-bubble: #3b82f6;
             --other-bubble: #334155;
             --other-text: #f1f5f9;
+            --system-bubble: #1e293b;
+            --system-text: #94a3b8;
             --input-bg: #334155;
             --input-border: #475569;
             --icon-color: #60a5fa;
@@ -92,16 +97,29 @@
                 padding-bottom: calc(8px + var(--safe-area-bottom)) !important;
             }
             .message-input { 
-                padding: 10px 12px !important; 
+                padding: 12px 16px !important; 
                 font-size: 16px !important;
-                min-height: 42px !important;
+                min-height: 50px !important;
+                max-height: 150px !important;
             }
-            .media-btn, .voice-btn, .camera-btn, .video-msg-btn { 
-                width: 38px !important; 
-                height: 38px !important; 
-                font-size: 1.1rem !important; 
+            .input-row {
+                gap: 6px !important;
             }
-            .send-btn { width: 42px !important; height: 42px !important; }
+            .send-btn { 
+                width: 50px !important; 
+                height: 50px !important;
+                font-size: 1.3rem !important;
+            }
+            .attach-btn {
+                width: 44px !important;
+                height: 44px !important;
+                font-size: 1.3rem !important;
+            }
+            .attach-menu {
+                bottom: 70px !important;
+                left: 10px !important;
+                right: 10px !important;
+            }
             .messages-area { padding: 12px !important; }
             .bubble { padding: 10px 12px !important; }
             
@@ -262,6 +280,10 @@
         }
         .my-message { align-self: flex-end; justify-content: flex-end; }
         .other-message { align-self: flex-start; }
+        .system-message { 
+            align-self: center; 
+            max-width: 90%; 
+        }
         .bubble { 
             padding: 8px 14px; 
             border-radius: 20px; 
@@ -269,6 +291,12 @@
             color: var(--other-text); 
             position: relative; 
             word-break: break-word;
+        }
+        .system-message .bubble {
+            background: var(--system-bubble);
+            color: var(--system-text);
+            text-align: center;
+            font-size: 0.85rem;
         }
         .my-message .bubble { background: var(--my-bubble); color: var(--my-text); border-bottom-right-radius: 4px; }
         .message-header { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 0.75rem; }
@@ -312,9 +340,27 @@
         }
         .delete-btn { right: -8px; background: #ef4444; }
         .reply-btn { left: -8px; background: #8b5cf6; }
-        .message:hover .delete-btn, .message:hover .reply-btn { opacity: 1; }
+        
+        @media (hover: hover) {
+            .message:hover .delete-btn, 
+            .message:hover .reply-btn,
+            .message:hover .admin-delete-btn { 
+                opacity: 1; 
+            }
+        }
+        
         @media (hover: none) {
-            .delete-btn, .reply-btn { opacity: 1; width: 24px; height: 24px; top: -4px; }
+            .delete-btn, .reply-btn { 
+                opacity: 0; 
+                width: 24px; 
+                height: 24px; 
+                top: -4px; 
+            }
+            .message:active .delete-btn,
+            .message:active .reply-btn,
+            .message:active .admin-delete-btn {
+                opacity: 1;
+            }
         }
         
         .admin-delete-btn {
@@ -336,10 +382,6 @@
             align-items: center;
             justify-content: center;
         }
-        .message:hover .admin-delete-btn { opacity: 1; }
-        @media (hover: none) {
-            .admin-delete-btn { opacity: 1; }
-        }
         
         .reply-indicator { 
             background: var(--input-bg); 
@@ -355,9 +397,14 @@
         .input-area { 
             padding: 12px 16px; 
             background: var(--input-bg); 
-            border-top: 1px solid var(--input-border); 
+            border-top: 1px solid var(--input-border);
+            position: relative;
         }
-        .input-row { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+        .input-row { 
+            display: flex; 
+            gap: 8px; 
+            align-items: flex-end;
+        }
         .message-input { 
             flex: 1; 
             padding: 12px 16px; 
@@ -368,32 +415,79 @@
             outline: none; 
             resize: none; 
             font-size: 16px;
-            max-height: 120px;
+            max-height: 150px;
+            min-height: 50px;
+            line-height: 1.4;
         }
-        .media-btn, .voice-btn, .camera-btn, .video-msg-btn { 
-            background: transparent; 
-            border: none; 
-            font-size: 1.3rem; 
-            cursor: pointer; 
-            color: var(--icon-color); 
-            width: 44px; 
-            height: 44px; 
-            border-radius: 50%; 
-            transition: all 0.15s; 
+        
+        .attach-btn {
+            background: transparent;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            color: var(--icon-color);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            transition: all 0.15s;
             display: flex;
             align-items: center;
             justify-content: center;
             -webkit-tap-highlight-color: transparent;
             flex-shrink: 0;
         }
-        .media-btn:active, .voice-btn:active, .camera-btn:active, .video-msg-btn:active { transform: scale(0.9); background: rgba(74,108,247,0.1); }
-        .video-msg-btn.recording { background: #ef4444; color: white; animation: pulse 1s infinite; }
+        .attach-btn:active { transform: scale(0.9); background: rgba(74,108,247,0.1); }
+        
+        .attach-menu {
+            position: absolute;
+            bottom: 80px;
+            left: 16px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 16px;
+            padding: 8px;
+            display: none;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 100;
+        }
+        
+        .attach-menu.visible {
+            display: grid;
+        }
+        
+        .attach-menu-btn {
+            background: transparent;
+            border: none;
+            color: var(--other-text);
+            padding: 10px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75rem;
+            transition: background 0.15s;
+            white-space: nowrap;
+        }
+        
+        .attach-menu-btn i {
+            font-size: 1.2rem;
+            color: var(--icon-color);
+        }
+        
+        .attach-menu-btn:active {
+            background: var(--contact-hover);
+        }
+        
         .send-btn { 
             background: var(--icon-color); 
             color: white; 
             border: none; 
-            width: 48px; 
-            height: 48px; 
+            width: 50px; 
+            height: 50px; 
             border-radius: 50%; 
             cursor: pointer; 
             font-size: 1.2rem; 
@@ -459,7 +553,6 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes highlight { 0% { background: rgba(74,108,247,0.5); } 100% { background: transparent; } }
         
-        .system-message { text-align: center; font-size: 0.7rem; background: #e9ecef; padding: 6px 12px; border-radius: 20px; margin: 4px auto; width: fit-content; }
         .highlight-message { animation: highlight 1s; }
         
         .modal, .auth-overlay { 
@@ -506,8 +599,12 @@
             text-align: center; 
         }
         .dark .auth-card, .dark .modal-content { background: #1e293b; color: white; }
-        .dark .auth-card input, .dark .modal-content input { background: #334155; color: white; border-color: #475569; }
-        .auth-card input, .modal-content input { 
+        .dark .auth-card input, .dark .modal-content input, .dark .modal-content textarea { 
+            background: #334155; 
+            color: white; 
+            border-color: #475569; 
+        }
+        .auth-card input, .modal-content input, .modal-content textarea { 
             width: 100%; 
             padding: 14px; 
             margin: 12px 0; 
@@ -515,6 +612,11 @@
             border: 1px solid #ddd; 
             font-size: 16px;
             outline: none;
+        }
+        .modal-content textarea {
+            border-radius: 20px;
+            resize: vertical;
+            min-height: 80px;
         }
         .auth-card button, .modal-content button { 
             background: #4a6cf7; 
@@ -532,6 +634,67 @@
         .avatar-preview { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin: 10px auto; display: block; background: #4a6cf7; }
         
         .admin-panel h3 { color: white; margin-bottom: 20px; }
+        
+        .system-notify-section {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 16px;
+            margin: 15px 0;
+        }
+        
+        .system-notify-section h4 {
+            color: white;
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+        
+        .preset-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        
+        .preset-btn {
+            background: #334155;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        .preset-btn.update { background: #3b82f6; }
+        .preset-btn.success { background: #10b981; }
+        .preset-btn.error { background: #ef4444; }
+        
+        .custom-notify-input {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .custom-notify-input input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 20px;
+            border: none;
+            font-size: 0.9rem;
+        }
+        
+        .custom-notify-input button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
         .user-item { 
             background: #1e293b; 
             margin: 8px 0; 
@@ -593,6 +756,11 @@
         .sidebar-overlay.visible { display: block; }
         @media (min-width: 701px) {
             .sidebar-overlay { display: none !important; }
+            .attach-menu {
+                left: 50%;
+                transform: translateX(-50%);
+                min-width: 400px;
+            }
         }
     </style>
 </head>
@@ -600,14 +768,12 @@
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-<!-- Индикатор записи -->
 <div id="recordingIndicator" class="recording-indicator" style="display: none;">
     <i class="fas fa-microphone"></i>
     <span id="recordingTimer" class="recording-timer">00:00</span>
     <span>Идёт запись...</span>
 </div>
 
-<!-- Превью камеры для кружков -->
 <div id="cameraPreview" class="camera-preview" style="display: none;">
     <video id="previewVideo" autoplay muted playsinline></video>
 </div>
@@ -650,13 +816,16 @@
             <button id="cancelReplyBtn" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:1.2rem;">✕</button>
         </div>
         <div class="input-area">
+            <div class="attach-menu" id="attachMenu">
+                <button class="attach-menu-btn" id="attachPhotoBtn"><i class="fas fa-image"></i><span>Фото</span></button>
+                <button class="attach-menu-btn" id="attachCameraBtn"><i class="fas fa-camera"></i><span>Снять</span></button>
+                <button class="attach-menu-btn" id="attachVideoBtn"><i class="fas fa-video"></i><span>Видео</span></button>
+                <button class="attach-menu-btn" id="attachCircleBtn"><i class="fas fa-circle"></i><span>Кружок</span></button>
+                <button class="attach-menu-btn" id="attachVoiceBtn"><i class="fas fa-microphone"></i><span>Голос</span></button>
+            </div>
             <div class="input-row">
                 <textarea id="messageInput" class="message-input" placeholder="Сообщение..." rows="1"></textarea>
-                <button class="camera-btn" id="photoBtn" title="Фото"><i class="fas fa-image"></i></button>
-                <button class="camera-btn" id="takePhotoBtn" title="Снять"><i class="fas fa-camera"></i></button>
-                <button class="media-btn" id="videoFileBtn" title="Видео"><i class="fas fa-video"></i></button>
-                <button class="video-msg-btn" id="circleVideoBtn" title="Кружок"><i class="fas fa-circle"></i></button>
-                <button class="voice-btn" id="voiceBtn" title="Голосовое"><i class="fas fa-microphone"></i></button>
+                <button class="attach-btn" id="attachBtn"><i class="fas fa-paperclip"></i></button>
                 <button class="send-btn" id="sendBtn"><i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
@@ -688,6 +857,27 @@
     <button class="close-admin" id="closeAdminBtn">✕ Закрыть</button>
     <div class="admin-panel-content">
         <h3>👑 Админ-панель</h3>
+        
+        <!-- Системные уведомления -->
+        <div class="system-notify-section">
+            <h4><i class="fas fa-bullhorn"></i> Системные уведомления</h4>
+            <div class="preset-buttons">
+                <button class="preset-btn update" onclick="sendSystemNotification('update')">
+                    <i class="fas fa-sync-alt"></i> Установка обновления
+                </button>
+                <button class="preset-btn success" onclick="sendSystemNotification('success')">
+                    <i class="fas fa-check-circle"></i> Обновление установлено
+                </button>
+                <button class="preset-btn error" onclick="sendSystemNotification('error')">
+                    <i class="fas fa-exclamation-circle"></i> Ошибка обновления
+                </button>
+            </div>
+            <div class="custom-notify-input">
+                <input type="text" id="customNotifyText" placeholder="Своё уведомление...">
+                <button onclick="sendCustomNotification()"><i class="fas fa-paper-plane"></i> Отправить</button>
+            </div>
+        </div>
+        
         <button id="clearChatBtn" style="background:#f59e0b; padding:12px; border:none; border-radius:16px; margin:10px 0; cursor:pointer; width:100%; font-size:1rem;">🗑️ ОЧИСТИТЬ ОБЩИЙ ЧАТ</button>
         <div id="usersList"></div>
     </div>
@@ -799,6 +989,55 @@
             recordingTimerInterval = null;
         }
     }
+    
+    // Системные уведомления
+    window.sendSystemNotification = async function(type) {
+        if(!isAdmin) return;
+        
+        let text = '';
+        switch(type) {
+            case 'update':
+                text = '🔄 Установка обновления... Пожалуйста, подождите.';
+                break;
+            case 'success':
+                text = '✅ Обновление успешно установлено! Приятного использования!';
+                break;
+            case 'error':
+                text = '❌ Ошибка установки обновления. Попробуйте позже.';
+                break;
+        }
+        
+        await db.ref('group_messages').push({
+            userId: 'system',
+            name: 'Система',
+            avatar: '',
+            text: text,
+            time: Date.now(),
+            isSystem: true
+        });
+        
+        playSound();
+    };
+    
+    window.sendCustomNotification = async function() {
+        if(!isAdmin) return;
+        
+        const input = document.getElementById('customNotifyText');
+        const text = input.value.trim();
+        if(!text) return;
+        
+        await db.ref('group_messages').push({
+            userId: 'system',
+            name: 'Система',
+            avatar: '',
+            text: '📢 ' + text,
+            time: Date.now(),
+            isSystem: true
+        });
+        
+        input.value = '';
+        playSound();
+    };
     
     async function auth() {
         const name = document.getElementById('loginName').value.trim();
@@ -999,8 +1238,9 @@
     function renderMessage(msgId, msg) {
         if(!msg) return;
         const isMe = msg.userId === currentUserId;
+        const isSystem = msg.isSystem || msg.userId === 'system';
         const div = document.createElement('div');
-        div.className = `message ${isMe ? 'my-message' : 'other-message'}`;
+        div.className = `message ${isSystem ? 'system-message' : (isMe ? 'my-message' : 'other-message')}`;
         div.id = `msg-${msgId}`;
         
         let replyHtml = '';
@@ -1017,22 +1257,27 @@
         
         const avatar = msg.avatar || `https://ui-avatars.com/api/?background=6b4eff&color=fff&name=${encodeURIComponent(msg.name)}`;
         let readStatus = '';
-        if(isMe && currentChat.type === 'user') {
+        if(isMe && currentChat.type === 'user' && !isSystem) {
             if(msg.read) readStatus = '<span class="read-status read">✓✓ Прочитано</span>';
             else if(msg.delivered) readStatus = '<span class="read-status">✓✓ Доставлено</span>';
             else readStatus = '<span class="read-status">✓ Отправлено</span>';
         }
         
-        const deleteBtn = isMe ? `<button class="delete-btn" onclick="deleteMessage('${msgId}')"><i class="fas fa-trash"></i></button>` : '';
-        const adminDeleteBtn = (isAdmin && !isMe) ? `<button class="admin-delete-btn" onclick="adminDeleteMessage('${msgId}')" title="Удалить как админ"><i class="fas fa-trash"></i></button>` : '';
-        const replyBtn = `<button class="reply-btn" onclick="replyToMsg('${msgId}', '${escapeHtml(msg.name).replace(/'/g, "\\'")}', '${escapeHtml(msg.text || 'Медиа').replace(/'/g, "\\'")}')"><i class="fas fa-reply"></i></button>`;
+        const deleteBtn = (isMe && !isSystem) ? `<button class="delete-btn" onclick="deleteMessage('${msgId}')"><i class="fas fa-trash"></i></button>` : '';
+        const adminDeleteBtn = (isAdmin && !isMe && !isSystem) ? `<button class="admin-delete-btn" onclick="adminDeleteMessage('${msgId}')" title="Удалить как админ"><i class="fas fa-trash"></i></button>` : '';
+        const replyBtn = !isSystem ? `<button class="reply-btn" onclick="replyToMsg('${msgId}', '${escapeHtml(msg.name).replace(/'/g, "\\'")}', '${escapeHtml(msg.text || 'Медиа').replace(/'/g, "\\'")}')"><i class="fas fa-reply"></i></button>` : '';
         
-        div.innerHTML = `<div class="bubble">${deleteBtn}${adminDeleteBtn}${replyBtn}<div class="message-header"><img class="msg-avatar" src="${avatar}" alt="${msg.name}"><span class="message-name">${escapeHtml(msg.name)}</span></div>${replyHtml}${mediaHtml}${msg.text && !msg.mediaType ? `<div>${escapeHtml(msg.text)}</div>` : ''}<span class="message-time">${new Date(msg.time).toLocaleTimeString()} ${readStatus}</span></div>`;
+        if(isSystem) {
+            div.innerHTML = `<div class="bubble">${msg.text}<span class="message-time">${new Date(msg.time).toLocaleTimeString()}</span></div>`;
+        } else {
+            div.innerHTML = `<div class="bubble">${deleteBtn}${adminDeleteBtn}${replyBtn}<div class="message-header"><img class="msg-avatar" src="${avatar}" alt="${msg.name}"><span class="message-name">${escapeHtml(msg.name)}</span></div>${replyHtml}${mediaHtml}${msg.text && !msg.mediaType ? `<div>${escapeHtml(msg.text)}</div>` : ''}<span class="message-time">${new Date(msg.time).toLocaleTimeString()} ${readStatus}</span></div>`;
+        }
+        
         document.getElementById('messagesArea').appendChild(div);
         document.getElementById('messagesArea').scrollTop = document.getElementById('messagesArea').scrollHeight;
         
-        if(!isMe && !msg.read && currentChat.type === 'user') db.ref(`${getChatPath()}/${msgId}`).update({ read: true });
-        if(!isMe && document.hidden && Notification.permission === 'granted') { 
+        if(!isMe && !msg.read && currentChat.type === 'user' && !isSystem) db.ref(`${getChatPath()}/${msgId}`).update({ read: true });
+        if(!isMe && document.hidden && Notification.permission === 'granted' && !isSystem) { 
             playSound(); 
             new Notification(msg.name, { body: msg.text || 'Новое сообщение', icon: avatar });
         }
@@ -1109,7 +1354,44 @@
         else alert('Уже в контактах');
     };
     
-    document.getElementById('photoBtn').onclick = () => document.getElementById('photoInput').click();
+    // Обработчики для вложений
+    function setupAttachments() {
+        const attachBtn = document.getElementById('attachBtn');
+        const attachMenu = document.getElementById('attachMenu');
+        
+        attachBtn.onclick = (e) => {
+            e.stopPropagation();
+            attachMenu.classList.toggle('visible');
+        };
+        
+        document.addEventListener('click', (e) => {
+            if(!attachMenu.contains(e.target) && e.target !== attachBtn) {
+                attachMenu.classList.remove('visible');
+            }
+        });
+        
+        document.getElementById('attachPhotoBtn').onclick = () => {
+            attachMenu.classList.remove('visible');
+            document.getElementById('photoInput').click();
+        };
+        document.getElementById('attachCameraBtn').onclick = () => {
+            attachMenu.classList.remove('visible');
+            document.getElementById('cameraCaptureInput').click();
+        };
+        document.getElementById('attachVideoBtn').onclick = () => {
+            attachMenu.classList.remove('visible');
+            document.getElementById('videoFileInput').click();
+        };
+        document.getElementById('attachCircleBtn').onclick = () => {
+            attachMenu.classList.remove('visible');
+            document.getElementById('circleVideoBtn').click();
+        };
+        document.getElementById('attachVoiceBtn').onclick = () => {
+            attachMenu.classList.remove('visible');
+            document.getElementById('voiceBtn').click();
+        };
+    }
+    
     document.getElementById('photoInput').onchange = (e) => { 
         if(e.target.files[0]){ 
             const r=new FileReader(); 
@@ -1118,7 +1400,6 @@
             e.target.value=''; 
         } 
     };
-    document.getElementById('takePhotoBtn').onclick = () => document.getElementById('cameraCaptureInput').click();
     document.getElementById('cameraCaptureInput').onchange = (e) => { 
         if(e.target.files[0]){ 
             const r=new FileReader(); 
@@ -1127,7 +1408,6 @@
             e.target.value=''; 
         } 
     };
-    document.getElementById('videoFileBtn').onclick = () => document.getElementById('videoFileInput').click();
     document.getElementById('videoFileInput').onchange = (e) => { 
         if(e.target.files[0]){ 
             const r=new FileReader(); 
@@ -1168,7 +1448,6 @@
             btn.style.background = '#ef4444'; 
             btn.style.color = 'white';
             
-            // Показываем индикатор записи
             document.getElementById('recordingIndicator').style.display = 'flex';
             document.querySelector('#recordingIndicator i').className = 'fas fa-microphone';
             startRecordingTimer();
@@ -1198,7 +1477,6 @@
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true }); 
                 circleStream = stream; 
                 
-                // Показываем превью камеры
                 const previewVideo = document.getElementById('previewVideo');
                 previewVideo.srcObject = stream;
                 document.getElementById('cameraPreview').style.display = 'block';
@@ -1224,7 +1502,6 @@
                 document.getElementById('circleVideoBtn').classList.add('recording'); 
                 document.getElementById('circleVideoBtn').innerHTML = '<i class="fas fa-stop"></i>';
                 
-                // Показываем индикатор записи
                 document.getElementById('recordingIndicator').style.display = 'flex';
                 document.querySelector('#recordingIndicator i').className = 'fas fa-video';
                 startRecordingTimer();
@@ -1278,7 +1555,6 @@
                 const updates = {};
                 if(newName && newName !== currentUserName) updates.name = newName;
                 
-                // Используем FileReader для аватарки (как в сообщениях)
                 if(file) {
                     const reader = new FileReader();
                     const avatarBase64 = await new Promise((resolve, reject) => {
@@ -1453,6 +1729,7 @@
         setupProfile();
         setupTheme();
         setupAdmin();
+        setupAttachments();
         
         document.getElementById('menuToggle').onclick = openSidebar;
         document.getElementById('sidebarOverlay').onclick = closeSidebar;
@@ -1460,7 +1737,7 @@
         const textarea = document.getElementById('messageInput');
         textarea.addEventListener('input', function() {
             this.style.height = 'auto';
-            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            this.style.height = Math.min(this.scrollHeight, 150) + 'px';
         });
         
         document.getElementById('sendBtn').onclick = sendTextMessage;
