@@ -5,7 +5,6 @@
     <title>xaMOff Messenger | Mobile</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif; }
@@ -407,7 +406,56 @@
         }
         .send-btn:active { transform: scale(0.95); }
         
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        .recording-indicator {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            animation: pulse 1.5s infinite;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        
+        .recording-indicator i {
+            font-size: 1.2rem;
+        }
+        
+        .recording-timer {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .camera-preview {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 120px;
+            height: 160px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            z-index: 1000;
+            border: 2px solid white;
+        }
+        
+        .camera-preview video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        @keyframes pulse { 
+            0% { transform: translateX(-50%) scale(1); } 
+            50% { transform: translateX(-50%) scale(1.05); } 
+            100% { transform: translateX(-50%) scale(1); } 
+        }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes highlight { 0% { background: rgba(74,108,247,0.5); } 100% { background: transparent; } }
         
@@ -552,6 +600,18 @@
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
+<!-- Индикатор записи -->
+<div id="recordingIndicator" class="recording-indicator" style="display: none;">
+    <i class="fas fa-microphone"></i>
+    <span id="recordingTimer" class="recording-timer">00:00</span>
+    <span>Идёт запись...</span>
+</div>
+
+<!-- Превью камеры для кружков -->
+<div id="cameraPreview" class="camera-preview" style="display: none;">
+    <video id="previewVideo" autoplay muted playsinline></video>
+</div>
+
 <div class="app-container" id="appContainer" style="display: none;">
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -647,7 +707,6 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const storage = firebase.storage();
     
     (async () => {
         const snap = await db.ref('users').orderByChild('name').equalTo('DaniksGames').once('value');
@@ -666,6 +725,8 @@
     let onlineStatusInterval = null;
     let isAdmin = false;
     let messagesLoaded = false;
+    let recordingTimerInterval = null;
+    let recordingSeconds = 0;
     
     function playSound() { 
         try { 
@@ -714,6 +775,28 @@
         if(currentChat.type === 'user') {
             const isOnline = await getUserOnlineStatus(currentChat.id);
             document.getElementById('chatHeaderStatus').innerText = isOnline ? '🟢 В сети' : '⚫ Не в сети';
+        }
+    }
+    
+    function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    
+    function startRecordingTimer() {
+        recordingSeconds = 0;
+        document.getElementById('recordingTimer').textContent = formatTime(0);
+        recordingTimerInterval = setInterval(() => {
+            recordingSeconds++;
+            document.getElementById('recordingTimer').textContent = formatTime(recordingSeconds);
+        }, 1000);
+    }
+    
+    function stopRecordingTimer() {
+        if(recordingTimerInterval) {
+            clearInterval(recordingTimerInterval);
+            recordingTimerInterval = null;
         }
     }
     
@@ -1055,10 +1138,16 @@
     };
     
     document.getElementById('voiceBtn').onclick = async () => {
-        if(isVoiceRecording && voiceRecorder?.state === 'recording') { voiceRecorder.stop(); return; }
+        if(isVoiceRecording && voiceRecorder?.state === 'recording') { 
+            voiceRecorder.stop(); 
+            return; 
+        }
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            voiceStream = stream; voiceRecorder = new MediaRecorder(stream); voiceChunks = [];
+            voiceStream = stream; 
+            voiceRecorder = new MediaRecorder(stream); 
+            voiceChunks = [];
+            
             voiceRecorder.ondataavailable = e => { if(e.data.size > 0) voiceChunks.push(e.data); };
             voiceRecorder.onstop = () => { 
                 const blob = new Blob(voiceChunks, {type:'audio/webm'}); 
@@ -1069,44 +1158,85 @@
                 isVoiceRecording = false; 
                 document.getElementById('voiceBtn').style.background = ''; 
                 document.getElementById('voiceBtn').style.color = '';
+                document.getElementById('recordingIndicator').style.display = 'none';
+                stopRecordingTimer();
             };
+            
             voiceRecorder.start(); 
             isVoiceRecording = true; 
             const btn = document.getElementById('voiceBtn'); 
             btn.style.background = '#ef4444'; 
             btn.style.color = 'white';
-            setTimeout(() => { if(isVoiceRecording && voiceRecorder?.state === 'recording') voiceRecorder.stop(); }, 15000);
-        } catch(e) { alert('Нет доступа к микрофону'); }
+            
+            // Показываем индикатор записи
+            document.getElementById('recordingIndicator').style.display = 'flex';
+            document.querySelector('#recordingIndicator i').className = 'fas fa-microphone';
+            startRecordingTimer();
+            
+            setTimeout(() => { 
+                if(isVoiceRecording && voiceRecorder?.state === 'recording') {
+                    voiceRecorder.stop(); 
+                }
+            }, 15000);
+        } catch(e) { 
+            alert('Нет доступа к микрофону'); 
+        }
     };
     
     document.getElementById('circleVideoBtn').onclick = async () => {
         if(isCircleRecording) { 
             if(circleRecorder?.state === 'recording') circleRecorder.stop(); 
-            isCircleRecording=false; 
+            isCircleRecording = false; 
             document.getElementById('circleVideoBtn').classList.remove('recording'); 
-            document.getElementById('circleVideoBtn').innerHTML='<i class="fas fa-circle"></i>'; 
+            document.getElementById('circleVideoBtn').innerHTML = '<i class="fas fa-circle"></i>'; 
             if(circleStream) circleStream.getTracks().forEach(t=>t.stop()); 
+            document.getElementById('cameraPreview').style.display = 'none';
+            document.getElementById('recordingIndicator').style.display = 'none';
+            stopRecordingTimer();
         } else { 
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true }); 
-                circleStream=stream; 
-                circleRecorder=new MediaRecorder(stream,{mimeType:'video/webm'}); 
-                circleChunks=[]; 
-                circleRecorder.ondataavailable=e=>{ if(e.data.size>0) circleChunks.push(e.data); }; 
-                circleRecorder.onstop=()=>{ 
-                    const blob=new Blob(circleChunks,{type:'video/webm'}); 
-                    const r=new FileReader(); 
-                    r.onload=e=>sendMediaMessage('video',e.target.result,true); 
+                circleStream = stream; 
+                
+                // Показываем превью камеры
+                const previewVideo = document.getElementById('previewVideo');
+                previewVideo.srcObject = stream;
+                document.getElementById('cameraPreview').style.display = 'block';
+                
+                circleRecorder = new MediaRecorder(stream, {mimeType: 'video/webm'}); 
+                circleChunks = []; 
+                
+                circleRecorder.ondataavailable = e => { if(e.data.size > 0) circleChunks.push(e.data); }; 
+                circleRecorder.onstop = () => { 
+                    const blob = new Blob(circleChunks, {type:'video/webm'}); 
+                    const r = new FileReader(); 
+                    r.onload = e => sendMediaMessage('video', e.target.result, true); 
                     r.readAsDataURL(blob); 
                     if(circleStream) circleStream.getTracks().forEach(t=>t.stop()); 
-                    circleStream=null; 
+                    circleStream = null; 
+                    document.getElementById('cameraPreview').style.display = 'none';
+                    document.getElementById('recordingIndicator').style.display = 'none';
+                    stopRecordingTimer();
                 }; 
+                
                 circleRecorder.start(); 
-                isCircleRecording=true; 
+                isCircleRecording = true; 
                 document.getElementById('circleVideoBtn').classList.add('recording'); 
-                document.getElementById('circleVideoBtn').innerHTML='<i class="fas fa-stop"></i>'; 
-                setTimeout(()=>{ if(isCircleRecording && circleRecorder?.state === 'recording'){ circleRecorder.stop(); } },30000);
-            } catch(e) { alert('Нет доступа к камере'); }
+                document.getElementById('circleVideoBtn').innerHTML = '<i class="fas fa-stop"></i>';
+                
+                // Показываем индикатор записи
+                document.getElementById('recordingIndicator').style.display = 'flex';
+                document.querySelector('#recordingIndicator i').className = 'fas fa-video';
+                startRecordingTimer();
+                
+                setTimeout(() => { 
+                    if(isCircleRecording && circleRecorder?.state === 'recording') { 
+                        circleRecorder.stop(); 
+                    } 
+                }, 30000);
+            } catch(e) { 
+                alert('Нет доступа к камере'); 
+            }
         }
     };
     
@@ -1148,16 +1278,15 @@
                 const updates = {};
                 if(newName && newName !== currentUserName) updates.name = newName;
                 
+                // Используем FileReader для аватарки (как в сообщениях)
                 if(file) {
-                    const storageRef = storage.ref();
-                    const avatarRef = storageRef.child(`avatars/${currentUserId}_${Date.now()}`);
-                    
-                    const snapshot = await avatarRef.put(file, {
-                        contentType: file.type
+                    const reader = new FileReader();
+                    const avatarBase64 = await new Promise((resolve, reject) => {
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
                     });
-                    
-                    const newAvatarUrl = await snapshot.ref.getDownloadURL();
-                    updates.avatarUrl = newAvatarUrl;
+                    updates.avatarUrl = avatarBase64;
                 }
                 
                 if(Object.keys(updates).length > 0) {
@@ -1229,15 +1358,15 @@
             fileInput.onchange = async (e) => {
                 if(e.target.files[0]) {
                     try {
-                        const storageRef = storage.ref();
-                        const avatarRef = storageRef.child(`avatars/${userId}_${Date.now()}`);
-                        const snapshot = await avatarRef.put(e.target.files[0], {
-                            contentType: e.target.files[0].type
+                        const reader = new FileReader();
+                        const avatarBase64 = await new Promise((resolve, reject) => {
+                            reader.onload = (e) => resolve(e.target.result);
+                            reader.onerror = reject;
+                            reader.readAsDataURL(e.target.files[0]);
                         });
-                        const url = await snapshot.ref.getDownloadURL();
-                        await db.ref('users/' + userId).update({ avatarUrl: url });
+                        await db.ref('users/' + userId).update({ avatarUrl: avatarBase64 });
                         const msgs = await db.ref('group_messages').orderByChild('userId').equalTo(userId).once('value');
-                        msgs.forEach(m => m.ref.update({ avatar: url }));
+                        msgs.forEach(m => m.ref.update({ avatar: avatarBase64 }));
                         alert('Аватар обновлён');
                         loadAdminUsers();
                     } catch(err) {
