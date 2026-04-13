@@ -84,7 +84,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes highlight { 0% { background: rgba(74,108,247,0.5); } 100% { background: transparent; } }
         
-        .modal, .auth-overlay, .admin-panel, .forward-modal, .read-by-modal {
+        .modal, .auth-overlay, .admin-panel, .forward-modal, .read-by-modal, .profile-view-modal {
             animation: fadeInScale 0.2s ease-out;
         }
         .message {
@@ -130,7 +130,6 @@
             font-size: 5rem;
         }
         
-        /* Unread badge */
         .unread-badge {
             background: var(--unread-badge);
             color: white;
@@ -175,6 +174,189 @@
         
         .contact-delete:active {
             transform: scale(0.9);
+        }
+        
+        .group-badge {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-left: 5px;
+        }
+        
+        /* Профиль пользователя */
+        .profile-view-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 3500;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        .profile-view-content {
+            background: var(--chat-bg);
+            border-radius: 28px;
+            padding: 28px;
+            width: 90%;
+            max-width: 380px;
+            text-align: center;
+        }
+        .profile-view-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 16px;
+            display: block;
+            background: var(--icon-color);
+        }
+        .profile-view-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--other-text);
+            margin-bottom: 8px;
+        }
+        .profile-view-bio {
+            color: var(--other-text);
+            opacity: 0.8;
+            margin-bottom: 16px;
+            padding: 0 16px;
+            word-break: break-word;
+        }
+        .profile-view-status {
+            font-size: 0.85rem;
+            color: var(--other-text);
+            opacity: 0.7;
+            margin-bottom: 20px;
+        }
+        .profile-view-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        .profile-view-buttons button {
+            padding: 10px 20px;
+            border-radius: 30px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .send-msg-btn {
+            background: var(--icon-color);
+            color: white;
+        }
+        .close-profile-btn {
+            background: #94a3b8;
+            color: white;
+        }
+        
+        /* Группы */
+        .create-group-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 3500;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        .create-group-content {
+            background: var(--chat-bg);
+            border-radius: 28px;
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .create-group-content h3 {
+            color: var(--other-text);
+            margin-bottom: 16px;
+        }
+        .create-group-content input, .create-group-content textarea {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 20px;
+            border: 1px solid var(--input-border);
+            background: var(--input-bg);
+            color: var(--other-text);
+            font-size: 1rem;
+        }
+        .create-group-content textarea {
+            min-height: 60px;
+            resize: vertical;
+        }
+        .member-select-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 12px 0;
+            border: 1px solid var(--input-border);
+            border-radius: 16px;
+            padding: 8px;
+        }
+        .member-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: background 0.15s;
+        }
+        .member-item:hover {
+            background: var(--contact-hover);
+        }
+        .member-item input {
+            width: 20px;
+            margin: 0;
+        }
+        .member-item img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+        }
+        .create-group-btn {
+            background: var(--icon-color);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 30px;
+            width: 100%;
+            margin-top: 12px;
+            cursor: pointer;
+        }
+        
+        .contact-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            background: var(--input-bg);
+            border-radius: 16px;
+            margin-top: 8px;
+            border: 1px solid var(--input-border);
+        }
+        .contact-card img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+        .contact-card-info {
+            flex: 1;
+        }
+        .contact-card-name {
+            font-weight: 600;
+            color: var(--other-text);
+        }
+        .contact-card-phone {
+            font-size: 0.7rem;
+            opacity: 0.7;
         }
         
         @media (max-width: 700px) {
@@ -270,7 +452,7 @@
         }
         .sidebar-header { background: var(--header-bg); color: white; padding: 16px; }
         .sidebar-header h2 { font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
-        .user-info-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2); }
+        .user-info-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2); cursor: pointer; }
         .user-info-row img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #4a6cf7; }
         .search-box { padding: 12px; border-bottom: 1px solid var(--input-border); }
         .search-box input { 
@@ -315,8 +497,8 @@
         
         .chat-main { flex: 1; display: flex; flex-direction: column; background: var(--chat-bg); }
         .chat-header { background: var(--header-bg); color: white; padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
-        .chat-header-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: #4a6cf7; }
-        .chat-header-info { flex: 1; min-width: 0; }
+        .chat-header-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: #4a6cf7; cursor: pointer; }
+        .chat-header-info { flex: 1; min-width: 0; cursor: pointer; }
         .chat-header-name { font-weight: 600; font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .chat-header-status { font-size: 0.7rem; opacity: 0.8; }
         .chat-header-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -397,9 +579,9 @@
             font-size: 0.85rem;
         }
         .my-message .bubble { background: var(--my-bubble); color: var(--my-text); border-bottom-right-radius: 4px; }
-        .message-header { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 0.75rem; }
-        .msg-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; background: #6b4eff; }
-        .message-name { font-weight: 600; }
+        .message-header { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 0.75rem; cursor: pointer; }
+        .msg-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; background: #6b4eff; cursor: pointer; }
+        .message-name { font-weight: 600; cursor: pointer; }
         .reply-preview { 
             font-size: 0.7rem; 
             background: rgba(0,0,0,0.08); 
@@ -1139,6 +1321,21 @@
         }
         
         .highlight-message { animation: highlight 1s; }
+        
+        .add-group-btn {
+            background: var(--icon-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
@@ -1183,11 +1380,35 @@
     </div>
 </div>
 
+<div id="profileViewModal" class="profile-view-modal">
+    <div class="profile-view-content">
+        <img id="profileViewAvatar" class="profile-view-avatar" src="" alt="Avatar">
+        <div class="profile-view-name" id="profileViewName"></div>
+        <div class="profile-view-bio" id="profileViewBio"></div>
+        <div class="profile-view-status" id="profileViewStatus"></div>
+        <div class="profile-view-buttons">
+            <button class="send-msg-btn" id="profileViewSendMsg">💬 Написать</button>
+            <button class="close-profile-btn" onclick="closeProfileView()">Закрыть</button>
+        </div>
+    </div>
+</div>
+
+<div id="createGroupModal" class="create-group-modal">
+    <div class="create-group-content">
+        <h3><i class="fas fa-users"></i> Создать группу</h3>
+        <input type="text" id="groupName" placeholder="Название группы">
+        <textarea id="groupDescription" placeholder="Описание группы (необязательно)"></textarea>
+        <div class="member-select-list" id="memberSelectList"></div>
+        <button class="create-group-btn" id="createGroupBtn">✅ Создать группу</button>
+        <button class="forward-cancel" onclick="closeCreateGroupModal()" style="margin-top:8px;">Отмена</button>
+    </div>
+</div>
+
 <div class="app-container" id="appContainer" style="display: none;">
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h2><i class="fas fa-comments"></i> xaMOff</h2>
-            <div class="user-info-row">
+            <div class="user-info-row" onclick="showMyProfile()">
                 <img id="sidebarAvatar" src="" alt="Avatar">
                 <span id="sidebarName"></span>
             </div>
@@ -1195,14 +1416,15 @@
         <div class="search-box">
             <input type="text" id="searchInput" placeholder="🔍 Поиск по нику..." autocomplete="off">
         </div>
+        <button class="add-group-btn" id="createGroupBtnSidebar"><i class="fas fa-plus-circle"></i> Создать группу</button>
         <div class="contacts-list" id="contactsList"></div>
     </div>
     
     <div class="chat-main">
         <div class="chat-header">
             <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
-            <img id="chatHeaderAvatar" class="chat-header-avatar" src="" alt="Avatar">
-            <div class="chat-header-info">
+            <img id="chatHeaderAvatar" class="chat-header-avatar" src="" alt="Avatar" onclick="showCurrentChatProfile()">
+            <div class="chat-header-info" onclick="showCurrentChatProfile()">
                 <div class="chat-header-name" id="chatHeaderName">Общий чат</div>
                 <div class="chat-header-status" id="chatHeaderStatus">Группа</div>
             </div>
@@ -1236,6 +1458,7 @@
                 <button class="attach-menu-btn" id="attachCameraBtn"><i class="fas fa-camera"></i><span>Снять</span></button>
                 <button class="attach-menu-btn" id="attachVideoBtn"><i class="fas fa-video"></i><span>Видео</span></button>
                 <button class="attach-menu-btn" id="attachFileBtn"><i class="fas fa-file"></i><span>Файл</span></button>
+                <button class="attach-menu-btn" id="attachContactBtn"><i class="fas fa-address-card"></i><span>Контакт</span></button>
                 <button class="attach-menu-btn" id="attachCircleBtn"><i class="fas fa-circle"></i><span>Кружок</span></button>
                 <button class="attach-menu-btn" id="attachVoiceBtn"><i class="fas fa-microphone"></i><span>Голос</span></button>
             </div>
@@ -1264,6 +1487,7 @@
         <img id="avatarPreview" class="avatar-preview" src="" alt="Preview">
         <input type="file" id="modalAvatar" accept="image/*">
         <input type="text" id="modalName" placeholder="Новый никнейм" autocomplete="off">
+        <textarea id="modalBio" placeholder="Описание профиля" rows="3"></textarea>
         <button id="saveProfileBtn">💾 Сохранить</button>
         <button id="closeModalBtn" style="background:#94a3b8;">Отмена</button>
     </div>
@@ -1326,34 +1550,22 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// Кэши для оптимизации
 const userCache = new Map();
 const avatarCache = new Map();
 
 // Создаём учётку DaniksGames
 (async () => {
     const snap = await db.ref('users').orderByChild('name').equalTo('DaniksGames').once('value');
-    if(snap.exists()) snap.forEach(c => c.ref.update({ password: 'Dan10102011' }));
-    else await db.ref('users').push({ name: 'DaniksGames', password: 'Dan10102011', avatarUrl: '', blocked: false, createdAt: Date.now(), online: false, lastSeen: Date.now() });
-    
-    // Создаём структуру для группы
-    const groupMembersRef = db.ref('group_members');
-    const membersSnap = await groupMembersRef.once('value');
-    if(!membersSnap.exists()) {
-        const danikSnap = await db.ref('users').orderByChild('name').equalTo('DaniksGames').once('value');
-        if(danikSnap.exists()) {
-            danikSnap.forEach(d => {
-                db.ref('group_members/' + d.key).set(true);
-            });
-        }
-    }
+    if(snap.exists()) snap.forEach(c => c.ref.update({ password: 'Dan10102011', bio: 'Создатель xaMOff Messenger' }));
+    else await db.ref('users').push({ name: 'DaniksGames', password: 'Dan10102011', avatarUrl: '', bio: 'Создатель xaMOff Messenger', blocked: false, createdAt: Date.now(), online: false, lastSeen: Date.now() });
 })();
 
 // ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
-let currentUserId = null, currentUserName = null, currentUserAvatar = null, isBlocked = false;
+let currentUserId = null, currentUserName = null, currentUserAvatar = null, currentUserBio = null, isBlocked = false;
 let currentChat = { type: 'group', id: 'global', name: 'Общий чат' };
 let replyingTo = null;
 let contacts = [];
+let groups = [];
 let unreadCounts = new Map();
 let audioCtx = null;
 let voiceRecorder = null, voiceChunks = [], isVoiceRecording = false, voiceStream = null;
@@ -1367,7 +1579,8 @@ let recordingSeconds = 0;
 let pendingMedia = null;
 let selectedMessages = new Set();
 let allUsers = [];
-let groupMembers = new Set();
+let groupMembers = new Map(); // groupId -> Set of userIds
+let userGroups = new Map(); // userId -> Set of groupIds
 
 // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
 function formatFileSize(bytes) {
@@ -1423,6 +1636,161 @@ function getAvatarUrl(name, avatar) {
     avatarCache.set(name, url);
     return url;
 }
+
+// ==================== ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ ====================
+window.showUserProfile = async (userId, userName) => {
+    const userSnap = await db.ref('users/' + userId).once('value');
+    const user = userSnap.val();
+    if(!user) return;
+    
+    document.getElementById('profileViewAvatar').src = getAvatarUrl(user.name, user.avatarUrl);
+    document.getElementById('profileViewName').innerText = user.name;
+    document.getElementById('profileViewBio').innerText = user.bio || 'Нет описания';
+    document.getElementById('profileViewStatus').innerHTML = user.online ? '🟢 В сети' : '⚫ Не в сети';
+    
+    document.getElementById('profileViewModal').style.display = 'flex';
+    document.getElementById('profileViewModal').dataset.userId = userId;
+    document.getElementById('profileViewModal').dataset.userName = user.name;
+};
+
+window.showMyProfile = () => {
+    showUserProfile(currentUserId, currentUserName);
+};
+
+window.showCurrentChatProfile = () => {
+    if(currentChat.type === 'user') {
+        showUserProfile(currentChat.id, currentChat.name);
+    } else if(currentChat.type === 'group') {
+        showGroupInfo(currentChat.id);
+    }
+};
+
+window.closeProfileView = () => {
+    document.getElementById('profileViewModal').style.display = 'none';
+};
+
+document.getElementById('profileViewSendMsg').onclick = () => {
+    const userId = document.getElementById('profileViewModal').dataset.userId;
+    const userName = document.getElementById('profileViewModal').dataset.userName;
+    closeProfileView();
+    switchChat(userId, userName, false);
+};
+
+// ==================== ГРУППЫ ====================
+async function loadGroups() {
+    const groupsRef = db.ref('groups');
+    const snap = await groupsRef.once('value');
+    const groupsData = snap.val() || {};
+    groups = [];
+    
+    for(let id in groupsData) {
+        const group = groupsData[id];
+        if(group.members && group.members[currentUserId]) {
+            groups.push({
+                id: id,
+                name: group.name,
+                description: group.description,
+                creator: group.creator,
+                members: group.members,
+                createdAt: group.createdAt
+            });
+            groupMembers.set(id, new Set(Object.keys(group.members || {})));
+        }
+    }
+}
+
+async function createGroup(name, description, selectedMembers) {
+    const groupId = Date.now().toString();
+    const members = { [currentUserId]: true };
+    selectedMembers.forEach(m => { members[m] = true; });
+    
+    await db.ref('groups/' + groupId).set({
+        id: groupId,
+        name: name,
+        description: description || '',
+        creator: currentUserId,
+        members: members,
+        createdAt: Date.now()
+    });
+    
+    await loadGroups();
+    await loadContacts();
+    return groupId;
+}
+
+window.showCreateGroupModal = async () => {
+    await loadAllUsers();
+    const container = document.getElementById('memberSelectList');
+    container.innerHTML = '<div style="padding: 8px; color: var(--other-text);">Выберите участников:</div>';
+    
+    for(let user of allUsers) {
+        if(user.id !== currentUserId) {
+            container.innerHTML += `
+                <div class="member-item" onclick="toggleMemberSelect('${user.id}')">
+                    <input type="checkbox" id="member_${user.id}" value="${user.id}">
+                    <img src="${getAvatarUrl(user.name, user.avatar)}" alt="${user.name}">
+                    <span>${escapeHtml(user.name)}</span>
+                </div>
+            `;
+        }
+    }
+    
+    document.getElementById('createGroupModal').style.display = 'flex';
+};
+
+window.toggleMemberSelect = (userId) => {
+    const cb = document.getElementById(`member_${userId}`);
+    if(cb) cb.checked = !cb.checked;
+};
+
+window.closeCreateGroupModal = () => {
+    document.getElementById('createGroupModal').style.display = 'none';
+    document.getElementById('groupName').value = '';
+    document.getElementById('groupDescription').value = '';
+};
+
+document.getElementById('createGroupBtn').onclick = async () => {
+    const name = document.getElementById('groupName').value.trim();
+    if(!name) {
+        alert('Введите название группы');
+        return;
+    }
+    
+    const selectedMembers = [];
+    document.querySelectorAll('#memberSelectList input:checked').forEach(cb => {
+        selectedMembers.push(cb.value);
+    });
+    
+    const groupId = await createGroup(name, document.getElementById('groupDescription').value, selectedMembers);
+    alert('✅ Группа создана!');
+    closeCreateGroupModal();
+    await loadContacts();
+    switchChat(groupId, name, true);
+};
+
+window.showGroupInfo = async (groupId) => {
+    const groupSnap = await db.ref('groups/' + groupId).once('value');
+    const group = groupSnap.val();
+    if(!group) return;
+    
+    const membersList = Object.keys(group.members || {});
+    let membersHtml = '';
+    for(let memberId of membersList) {
+        const userSnap = await db.ref('users/' + memberId).once('value');
+        if(userSnap.exists()) {
+            const user = userSnap.val();
+            membersHtml += `<div class="read-by-user"><img src="${getAvatarUrl(user.name, user.avatarUrl)}"><span>${escapeHtml(user.name)}${memberId === group.creator ? ' 👑' : ''}</span></div>`;
+        }
+    }
+    
+    document.getElementById('readByList').innerHTML = `
+        <h4 style="margin-bottom:12px;">${escapeHtml(group.name)}</h4>
+        <p style="margin-bottom:12px; opacity:0.7;">${group.description || 'Нет описания'}</p>
+        <p style="margin-bottom:8px;"><strong>Участники (${membersList.length}):</strong></p>
+        ${membersHtml}
+    `;
+    document.getElementById('readByModal').classList.add('visible');
+};
 
 // ==================== УПРАВЛЕНИЕ СТАТУСОМ ОНЛАЙН ====================
 function updateOnlineStatus() { 
@@ -1484,6 +1852,7 @@ async function auth() {
                     currentUserId = c.key; 
                     currentUserName = c.val().name; 
                     currentUserAvatar = c.val().avatarUrl || null;
+                    currentUserBio = c.val().bio || '';
                     isBlocked = c.val().blocked || false;
                     found = true; 
                 } 
@@ -1497,9 +1866,10 @@ async function auth() {
         } else {
             const newUser = usersRef.push();
             currentUserId = newUser.key;
-            await newUser.set({ name, password, avatarUrl: '', blocked: false, createdAt: Date.now(), lastSeen: Date.now(), online: true });
+            await newUser.set({ name, password, avatarUrl: '', bio: '', blocked: false, createdAt: Date.now(), lastSeen: Date.now(), online: true });
             currentUserName = name; 
             currentUserAvatar = null;
+            currentUserBio = '';
             isBlocked = false;
         }
         
@@ -1546,31 +1916,9 @@ async function loadAllUsers() {
     userCache.set('allUsers', allUsers);
 }
 
-async function loadGroupMembers() {
-    const snap = await db.ref('group_members').once('value');
-    groupMembers.clear();
-    const members = snap.val() || {};
-    for(let id in members) {
-        if(members[id] === true || members[id] === 1) {
-            groupMembers.add(id);
-        }
-    }
-    
-    // Убеждаемся что админ есть в группе
-    const adminSnap = await db.ref('users').orderByChild('name').equalTo('DaniksGames').once('value');
-    if(adminSnap.exists()) {
-        adminSnap.forEach(admin => {
-            if(!groupMembers.has(admin.key)) {
-                db.ref('group_members/' + admin.key).set(true);
-                groupMembers.add(admin.key);
-            }
-        });
-    }
-}
-
 async function initUser() {
     await loadAllUsers();
-    await loadGroupMembers();
+    await loadGroups();
     
     // Загружаем контакты
     const contactsRef = db.ref('users/' + currentUserId + '/contacts');
@@ -1618,7 +1966,6 @@ async function loadContacts() {
     const contactsMap = new Map();
     
     for(let id in contactsData) {
-        const contact = contactsData[id];
         if(!contactsMap.has(id)) {
             const userSnap = await db.ref('users/' + id).once('value');
             if(userSnap.exists() && !userSnap.val().blocked) {
@@ -1634,9 +1981,9 @@ async function loadContacts() {
     
     contacts = Array.from(contactsMap.values());
     
-    // Добавляем группу только если пользователь в ней
-    if(groupMembers.has(currentUserId)) {
-        contacts.unshift({ id: 'global', name: '🌐 Общий чат', avatar: '', isGroup: true });
+    // Добавляем группы
+    for(let group of groups) {
+        contacts.unshift({ id: group.id, name: '👥 ' + group.name, avatar: '', isGroup: true, groupData: group });
     }
     
     renderContacts();
@@ -1673,29 +2020,25 @@ function renderContacts() {
 }
 
 window.deleteContact = async (contactId) => {
-    if(confirm('Удалить контакт? Чат останется, но контакт исчезнет из списка')) {
+    if(confirm('Удалить контакт?')) {
         await db.ref('users/' + currentUserId + '/contacts/' + contactId).remove();
         await loadContacts();
         if(currentChat.id === contactId) {
-            if(groupMembers.has(currentUserId)) {
-                switchChat('global', '🌐 Общий чат', true);
-            } else if(contacts.length > 0) {
-                switchChat(contacts[0].id, contacts[0].name, false);
+            if(contacts.length > 0) {
+                switchChat(contacts[0].id, contacts[0].name, contacts[0].isGroup);
             }
         }
     }
 };
 
 window.clearChatWithContact = async (contactId) => {
-    if(confirm(`Очистить весь чат с ${contacts.find(c => c.id === contactId)?.name || 'пользователем'}?`)) {
+    if(confirm('Очистить весь чат?')) {
         const ids = [currentUserId, contactId].sort();
         const chatPath = `private_messages/${ids[0]}_${ids[1]}`;
         await db.ref(chatPath).remove();
-        
         if(processedMsgIds.has(chatPath)) {
             processedMsgIds.get(chatPath).clear();
         }
-        
         if(currentChat.id === contactId) {
             loadMessages();
         }
@@ -1704,8 +2047,8 @@ window.clearChatWithContact = async (contactId) => {
 };
 
 window.switchChat = async (chatId, chatName, isGroup) => {
-    currentChat = { type: isGroup ? 'group' : 'user', id: chatId, name: chatName };
-    document.getElementById('chatHeaderName').innerText = chatName;
+    currentChat = { type: isGroup ? 'group' : 'user', id: chatId, name: chatName.replace('👥 ', '') };
+    document.getElementById('chatHeaderName').innerText = currentChat.name;
     if(isGroup) {
         document.getElementById('chatHeaderStatus').innerText = '👥 Групповой чат';
     } else {
@@ -1713,7 +2056,7 @@ window.switchChat = async (chatId, chatName, isGroup) => {
         document.getElementById('chatHeaderStatus').innerHTML = isOnline ? '🟢 В сети' : '⚫ Не в сети';
     }
     const contact = contacts.find(c => c.id === chatId);
-    const avatar = contact?.avatar || `https://ui-avatars.com/api/?background=4a6cf7&color=fff&name=${encodeURIComponent(chatName)}`;
+    const avatar = contact?.avatar || getAvatarUrl(currentChat.name, '');
     document.getElementById('chatHeaderAvatar').src = avatar;
     replyingTo = null;
     document.getElementById('replyIndicator').style.display = 'none';
@@ -1790,17 +2133,13 @@ window.addContact = async (userId, userName) => {
 
 // ==================== ОТПРАВКА СООБЩЕНИЙ ====================
 function getChatPath() {
-    if(currentChat.type === 'group') return 'group_messages';
+    if(currentChat.type === 'group') return `group_messages/${currentChat.id}`;
     const ids = [currentUserId, currentChat.id].sort();
     return `private_messages/${ids[0]}_${ids[1]}`;
 }
 
-async function sendMessageWithMedia(mediaType, mediaUrl, caption, fileData = null, isCircle = false) {
+async function sendMessageWithMedia(mediaType, mediaUrl, caption, fileData = null, isCircle = false, contactData = null) {
     if(isBlocked) return alert('Вы заблокированы');
-    if(currentChat.type === 'group' && !groupMembers.has(currentUserId)) {
-        alert('Вы не являетесь участником группы');
-        return;
-    }
     
     const msgData = { 
         userId: currentUserId, 
@@ -1821,6 +2160,10 @@ async function sendMessageWithMedia(mediaType, mediaUrl, caption, fileData = nul
         msgData.fileSize = fileData.size;
         msgData.fileType = fileData.type;
     }
+    if(contactData) {
+        msgData.contactData = contactData;
+        msgData.mediaType = 'contact';
+    }
     if(replyingTo) { msgData.replyTo = replyingTo; replyingTo = null; document.getElementById('replyIndicator').style.display = 'none'; }
     
     await db.ref(getChatPath()).push(msgData);
@@ -1831,10 +2174,6 @@ async function sendTextMessage() {
     const input = document.getElementById('messageInput');
     const text = input.value.trim();
     if(!text || isBlocked) return;
-    if(currentChat.type === 'group' && !groupMembers.has(currentUserId)) {
-        alert('Вы не являетесь участником группы');
-        return;
-    }
     
     const msgData = { 
         userId: currentUserId, 
@@ -1853,6 +2192,15 @@ async function sendTextMessage() {
     input.value = '';
     input.style.height = 'auto';
     playSound();
+}
+
+async function sendContact(contactUserId, contactName, contactAvatar) {
+    const contactData = {
+        userId: contactUserId,
+        name: contactName,
+        avatar: contactAvatar
+    };
+    await sendMessageWithMedia('contact', '', '', null, false, contactData);
 }
 
 // ==================== ЗАГРУЗКА И ОТОБРАЖЕНИЕ СООБЩЕНИЙ ====================
@@ -1889,8 +2237,6 @@ function loadMessages() {
         if(!hasMessages && !messagesLoaded) {
             messagesArea.innerHTML = '<div class="no-messages">💬 Нет сообщений. Напишите первое!</div>';
             messagesLoaded = true;
-        } else if(messagesLoaded && messageCount === 0 && messagesArea.children.length === 0) {
-            messagesArea.innerHTML = '<div class="no-messages">💬 Нет сообщений. Напишите первое!</div>';
         }
     }, 1500);
     
@@ -1940,6 +2286,17 @@ function renderMessage(msgId, msg, chatPath) {
                 </div>
             </div>
         `;
+    } else if(msg.mediaType === 'contact' && msg.contactData) {
+        mediaHtml = `
+            <div class="contact-card" onclick="showUserProfile('${msg.contactData.userId}', '${escapeHtml(msg.contactData.name)}')">
+                <img src="${getAvatarUrl(msg.contactData.name, msg.contactData.avatar)}" alt="${msg.contactData.name}">
+                <div class="contact-card-info">
+                    <div class="contact-card-name">${escapeHtml(msg.contactData.name)}</div>
+                    <div class="contact-card-phone">Контакт</div>
+                </div>
+                <i class="fas fa-chevron-right" style="opacity:0.5;"></i>
+            </div>
+        `;
     }
     
     const avatar = msg.avatar || getAvatarUrl(msg.name, '');
@@ -1961,10 +2318,12 @@ function renderMessage(msgId, msg, chatPath) {
     const replyBtn = !isSystem ? `<button class="reply-btn" onclick="replyToMsg('${msgId}', '${escapeHtml(msg.name).replace(/'/g, "\\'")}', '${escapeHtml(msg.text || 'Медиа').replace(/'/g, "\\'")}')"><i class="fas fa-reply"></i></button>` : '';
     const forwardBtn = !isSystem ? `<button class="forward-btn" onclick="forwardSingleMessage('${msgId}')"><i class="fas fa-share"></i></button>` : '';
     
+    const nameClick = `onclick="event.stopPropagation(); showUserProfile('${msg.userId}', '${escapeHtml(msg.name).replace(/'/g, "\\'")}')"`;
+    
     if(isSystem) {
         div.innerHTML = `<div class="bubble">${msg.text}<span class="message-time">${new Date(msg.time).toLocaleTimeString()}</span></div>`;
     } else {
-        div.innerHTML = `<div class="bubble">${checkbox}${deleteBtn}${adminDeleteBtn}${replyBtn}${forwardBtn}<div class="message-header"><img class="msg-avatar" src="${avatar}" alt="${msg.name}"><span class="message-name">${escapeHtml(msg.name)}</span></div>${forwardedHtml}${replyHtml}${mediaHtml}${msg.text && !msg.mediaType ? `<div>${escapeHtml(msg.text)}</div>` : ''}<span class="message-time">${new Date(msg.time).toLocaleTimeString()} ${readStatus} ${readByInfo}</span></div>`;
+        div.innerHTML = `<div class="bubble">${checkbox}${deleteBtn}${adminDeleteBtn}${replyBtn}${forwardBtn}<div class="message-header"><img class="msg-avatar" src="${avatar}" alt="${msg.name}" ${nameClick}><span class="message-name" ${nameClick}>${escapeHtml(msg.name)}</span></div>${forwardedHtml}${replyHtml}${mediaHtml}${msg.text && !msg.mediaType ? `<div>${escapeHtml(msg.text)}</div>` : ''}<span class="message-time">${new Date(msg.time).toLocaleTimeString()} ${readStatus} ${readByInfo}</span></div>`;
     }
     
     requestAnimationFrame(() => {
@@ -1983,7 +2342,7 @@ function renderMessage(msgId, msg, chatPath) {
         msg.readBy[currentUserId] = true;
         updates.readBy = msg.readBy;
         db.ref(`${chatPath}/${msgId}`).update(updates);
-    } else if(!isMe && currentChat.type === 'group' && !isSystem && groupMembers.has(currentUserId)) {
+    } else if(!isMe && currentChat.type === 'group' && !isSystem) {
         if(!msg.readBy) msg.readBy = {};
         if(!msg.readBy[currentUserId]) {
             msg.readBy[currentUserId] = true;
@@ -1996,8 +2355,8 @@ function renderMessage(msgId, msg, chatPath) {
         new Notification(msg.name, { body: msg.text || 'Новое сообщение', icon: avatar, tag: 'msg' });
     }
     
-    if(!isMe && (currentChat.id !== (currentChat.type === 'group' ? 'global' : msg.userId))) {
-        const chatId = msg.userId === 'system' ? 'global' : (msg.userId === currentUserId ? 'global' : msg.userId);
+    if(!isMe && (currentChat.id !== (currentChat.type === 'group' ? currentChat.id : msg.userId))) {
+        const chatId = currentChat.type === 'group' ? currentChat.id : msg.userId;
         const current = unreadCounts.get(chatId) || 0;
         unreadCounts.set(chatId, current + 1);
         renderContacts();
@@ -2009,13 +2368,6 @@ function updateMessageInUI(msgId, msg) {
     if(el && msg.userId === currentUserId && currentChat.type === 'user') {
         const statusSpan = el.querySelector('.read-status');
         if(statusSpan) statusSpan.innerHTML = msg.read ? '✓✓ Прочитано' : (msg.delivered ? '✓✓ Доставлено' : '✓ Отправлено');
-    }
-    if(el && msg.userId === currentUserId && currentChat.type === 'group') {
-        const readByCount = msg.readBy ? Object.keys(msg.readBy).length - 1 : 0;
-        const readByInfo = el.querySelector('.read-by-info');
-        if(readByInfo) {
-            readByInfo.innerHTML = `👁 ${readByCount}`;
-        }
     }
 }
 
@@ -2109,7 +2461,7 @@ async function forwardMessages(messageIds, targetChatId, targetChatName, isGroup
             delete forwardData.readBy;
             forwardData.readBy = { [currentUserId]: true };
             
-            const targetPath = isGroup ? 'group_messages' : `private_messages/${[currentUserId, targetChatId].sort().join('_')}`;
+            const targetPath = isGroup ? `group_messages/${targetChatId}` : `private_messages/${[currentUserId, targetChatId].sort().join('_')}`;
             await db.ref(targetPath).push(forwardData);
         }
     }
@@ -2395,6 +2747,7 @@ function setupProfile() {
     document.getElementById('settingsBtn').onclick = () => {
         document.getElementById('avatarPreview').src = getAvatarUrl(currentUserName, currentUserAvatar);
         document.getElementById('modalName').value = currentUserName;
+        document.getElementById('modalBio').value = currentUserBio || '';
         document.getElementById('profileModal').style.display = 'flex';
     };
     document.getElementById('closeModalBtn').onclick = () => {
@@ -2417,6 +2770,7 @@ function setupProfile() {
         
         try {
             const newName = document.getElementById('modalName').value.trim();
+            const newBio = document.getElementById('modalBio').value.trim();
             const file = document.getElementById('modalAvatar').files[0];
             
             if(newName && newName !== currentUserName) {
@@ -2428,6 +2782,7 @@ function setupProfile() {
             
             const updates = {};
             if(newName && newName !== currentUserName) updates.name = newName;
+            if(newBio !== currentUserBio) updates.bio = newBio;
             
             if(file) {
                 const reader = new FileReader();
@@ -2449,6 +2804,7 @@ function setupProfile() {
                     document.getElementById('sidebarName').innerText = updates.name;
                     isAdmin = currentUserName === 'DaniksGames';
                 }
+                if(updates.bio) currentUserBio = updates.bio;
                 if(updates.avatarUrl) {
                     document.getElementById('sidebarAvatar').src = updates.avatarUrl;
                     avatarCache.delete(currentUserName);
@@ -2478,7 +2834,7 @@ window.sendSystemNotification = async function(type) {
         case 'success': text = '✅ Обновление успешно установлено! Приятного использования!'; break;
         case 'error': text = '❌ Ошибка установки обновления. Попробуйте позже.'; break;
     }
-    await db.ref('group_messages').push({
+    await db.ref('group_messages/global').push({
         userId: 'system', name: 'Система', avatar: '', text, time: Date.now(), isSystem: true
     });
     playSound();
@@ -2489,101 +2845,11 @@ window.sendCustomNotification = async function() {
     const input = document.getElementById('customNotifyText');
     const text = input.value.trim();
     if(!text) return;
-    await db.ref('group_messages').push({
+    await db.ref('group_messages/global').push({
         userId: 'system', name: 'Система', avatar: '', text: '📢 ' + text, time: Date.now(), isSystem: true
     });
     input.value = '';
     playSound();
-};
-
-async function loadGroupMembersAdmin() {
-    const container = document.getElementById('groupMembersList');
-    const membersMap = new Map();
-    
-    for(let userId of groupMembers) {
-        if(!membersMap.has(userId)) {
-            const userSnap = await db.ref('users/' + userId).once('value');
-            if(userSnap.exists()) {
-                membersMap.set(userId, { 
-                    id: userId, 
-                    name: userSnap.val().name, 
-                    avatar: userSnap.val().avatarUrl 
-                });
-            }
-        }
-    }
-    
-    const members = Array.from(membersMap.values());
-    
-    if(members.length === 0) {
-        container.innerHTML = '<div style="color: white; text-align: center; padding: 20px;">👥 Нет участников</div>';
-    } else {
-        container.innerHTML = members.map(m => `
-            <div style="display: flex; align-items: center; gap: 10px; padding: 8px; background: #334155; border-radius: 12px; margin-bottom: 8px;">
-                <img src="${getAvatarUrl(m.name, m.avatar)}" style="width: 32px; height: 32px; border-radius: 50%;">
-                <span style="flex:1; color:white;">${escapeHtml(m.name)}</span>
-                ${isAdmin && m.id !== currentUserId ? `<button onclick="removeFromGroup('${m.id}')" style="background:#ef4444; border:none; color:white; padding:4px 12px; border-radius:12px;">❌ Удалить</button>` : ''}
-            </div>
-        `).join('');
-    }
-    
-    const select = document.getElementById('addUserToGroupSelect');
-    select.innerHTML = '<option value="">-- Выберите пользователя --</option>';
-    
-    let allUsersData;
-    if (userCache.has('allUsersForGroup')) {
-        allUsersData = userCache.get('allUsersForGroup');
-    } else {
-        const allUsersSnap = await db.ref('users').once('value');
-        allUsersData = allUsersSnap.val();
-        userCache.set('allUsersForGroup', allUsersData);
-    }
-    
-    const addedUsers = new Set();
-    
-    for(let id in allUsersData) {
-        const u = allUsersData[id];
-        if(!u.blocked && !groupMembers.has(id) && id !== currentUserId && !addedUsers.has(id)) {
-            addedUsers.add(id);
-            select.innerHTML += `<option value="${id}">${escapeHtml(u.name)}</option>`;
-        }
-    }
-}
-
-window.removeFromGroup = async (userId) => {
-    if(!isAdmin) return;
-    await db.ref('group_members/' + userId).remove();
-    await loadGroupMembers();
-    await loadContacts();
-    if(currentChat.id === 'global' && userId === currentUserId) {
-        if(contacts.length > 0) {
-            switchChat(contacts[0].id, contacts[0].name, false);
-        }
-    }
-    await loadGroupMembersAdmin();
-};
-
-window.addToGroup = async () => {
-    if(!isAdmin) return;
-    const userId = document.getElementById('addUserToGroupSelect').value;
-    if(!userId) {
-        alert('❌ Выберите пользователя');
-        return;
-    }
-    
-    if(groupMembers.has(userId)) {
-        alert('⚠️ Пользователь уже в группе');
-        return;
-    }
-    
-    await db.ref('group_members/' + userId).set(true);
-    await loadGroupMembers();
-    await loadContacts();
-    await loadGroupMembersAdmin();
-    
-    userCache.delete('allUsersForGroup');
-    
-    alert('✅ Пользователь добавлен в группу');
 };
 
 async function loadAdminUsers() {
@@ -2635,11 +2901,9 @@ window.toggleBlock = async (id, blocked) => {
 window.deleteAccount = async (id) => { 
     if(confirm('Удалить аккаунт навсегда?')) { 
         await db.ref('users/' + id).remove();
-        await db.ref('group_members/' + id).remove();
         await db.ref('users/' + currentUserId + '/contacts/' + id).remove();
         userCache.clear();
         loadAdminUsers(); 
-        await loadGroupMembersAdmin();
         await loadContacts();
     } 
 };
@@ -2647,7 +2911,6 @@ window.deleteAccount = async (id) => {
 function setupAdmin() {
     document.getElementById('adminPanelBtn').onclick = async () => { 
         if(isAdmin) { 
-            await loadGroupMembersAdmin();
             await loadAdminUsers(); 
             document.getElementById('adminPanel').style.display = 'flex'; 
         } else {
@@ -2657,11 +2920,10 @@ function setupAdmin() {
     document.getElementById('closeAdminBtn').onclick = () => document.getElementById('adminPanel').style.display = 'none';
     document.getElementById('clearChatBtn').onclick = async () => { 
         if(isAdmin && confirm('Очистить общий чат?')) {
-            await db.ref('group_messages').remove();
+            await db.ref('group_messages/global').remove();
             alert('Чат очищен');
         }
     };
-    document.getElementById('addUserToGroupBtn').onclick = addToGroup;
 }
 
 // ==================== ТЕМА И ИНТЕРФЕЙС ====================
@@ -2714,6 +2976,22 @@ function setupAttachments() {
         attachMenu.classList.remove('visible');
         document.getElementById('fileInput').click();
     };
+    document.getElementById('attachContactBtn').onclick = async () => {
+        attachMenu.classList.remove('visible');
+        await loadAllUsers();
+        const contactsList = allUsers.filter(u => u.id !== currentUserId);
+        let contactHtml = '<div style="padding:10px;"><h4>Выберите контакт для отправки:</h4>';
+        contactsList.forEach(c => {
+            contactHtml += `<div class="forward-contact" onclick="sendContact('${c.id}', '${c.name.replace(/'/g, "\\'")}', '${c.avatar}'); closeForwardModal();">
+                <img src="${getAvatarUrl(c.name, c.avatar)}">
+                <div class="forward-contact-info"><div class="forward-contact-name">${escapeHtml(c.name)}</div></div>
+            </div>`;
+        });
+        contactHtml += '<button class="forward-cancel" onclick="closeForwardModal()">Отмена</button></div>';
+        document.getElementById('forwardContactsList').innerHTML = contactHtml;
+        document.getElementById('forwardModal').classList.add('visible');
+        window.forwardTo = null;
+    };
     document.getElementById('attachCircleBtn').onclick = () => {
         attachMenu.classList.remove('visible');
         startCircleRecording();
@@ -2760,6 +3038,7 @@ async function initAll() {
     
     document.getElementById('menuToggle').onclick = openSidebar;
     document.getElementById('sidebarOverlay').onclick = closeSidebar;
+    document.getElementById('createGroupBtnSidebar').onclick = showCreateGroupModal;
     
     const textarea = document.getElementById('messageInput');
     textarea.addEventListener('input', function() {
@@ -2808,10 +3087,8 @@ async function initAll() {
     document.getElementById('deleteSelectedBtn').onclick = deleteSelectedMessages;
     document.getElementById('cancelSelectionBtn').onclick = clearSelection;
     
-    if(groupMembers.has(currentUserId)) {
-        switchChat('global', '🌐 Общий чат', true);
-    } else if(contacts.length > 0) {
-        switchChat(contacts[0].id, contacts[0].name, false);
+    if(contacts.length > 0) {
+        switchChat(contacts[0].id, contacts[0].name, contacts[0].isGroup);
     }
     
     if(Notification.permission === 'default') Notification.requestPermission();
@@ -2835,6 +3112,7 @@ document.getElementById('authBtn').onclick = auth;
             currentUserId = uid; 
             currentUserName = snap.val().name; 
             currentUserAvatar = snap.val().avatarUrl;
+            currentUserBio = snap.val().bio || '';
             isBlocked = snap.val().blocked || false;
             isAdmin = currentUserName === 'DaniksGames';
             
